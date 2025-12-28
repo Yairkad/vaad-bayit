@@ -288,7 +288,7 @@ export default function RegisterPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading || (inviteCode && !invite)}>
+            <Button type="submit" className="w-full" disabled={isLoading || Boolean(inviteCode && !invite)}>
               {isLoading ? (
                 <>
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
