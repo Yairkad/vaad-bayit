@@ -1,0 +1,176 @@
+{
+  "common": {
+    "appName": "Vaad Bayit",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "close": "Close",
+    "actions": "Actions",
+    "status": "Status",
+    "date": "Date",
+    "amount": "Amount",
+    "description": "Description",
+    "notes": "Notes",
+    "noData": "No data to display",
+    "error": "Error",
+    "success": "Success"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password",
+    "sendResetLink": "Send Reset Link",
+    "loginTitle": "Login to System",
+    "registerTitle": "Register to System",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "invalidCredentials": "Invalid email or password",
+    "emailSent": "Password reset email sent",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "tenants": "Tenants",
+    "payments": "Payments",
+    "expenses": "Expenses",
+    "messages": "Messages",
+    "issues": "Issues",
+    "documents": "Documents",
+    "reports": "Reports",
+    "settings": "Settings",
+    "buildings": "Buildings",
+    "myArea": "My Area"
+  },
+  "buildings": {
+    "title": "Buildings",
+    "addBuilding": "Add Building",
+    "buildingName": "Building Name",
+    "address": "Address",
+    "city": "City",
+    "monthlyFee": "Monthly Fee",
+    "approve": "Approve",
+    "reject": "Reject",
+    "pending": "Pending Approval",
+    "approved": "Approved",
+    "tenantsCount": "Number of Tenants"
+  },
+  "tenants": {
+    "title": "Tenants",
+    "addTenant": "Add Tenant",
+    "editTenant": "Edit Tenant",
+    "tenantName": "Tenant Name",
+    "apartment": "Apartment",
+    "paymentMethod": "Payment Method",
+    "standingOrder": "Standing Order",
+    "cash": "Cash",
+    "standingOrderActive": "Standing Order Active",
+    "uploadStandingOrder": "Upload Standing Order",
+    "hasUser": "Has User",
+    "noUser": "No User",
+    "inviteUser": "Invite to System"
+  },
+  "payments": {
+    "title": "Payments",
+    "month": "Month",
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "markAsPaid": "Mark as Paid",
+    "markAsUnpaid": "Mark as Unpaid",
+    "paymentReceipt": "Payment Receipt",
+    "generateReceipt": "Generate Receipt",
+    "totalDebt": "Total Debt",
+    "receiptDisclaimer": "Payment confirmation for documentation purposes only – not a receipt"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "addExpense": "Add Expense",
+    "category": "Category",
+    "categories": {
+      "maintenance": "Maintenance",
+      "cleaning": "Cleaning",
+      "electricity": "Electricity",
+      "water": "Water",
+      "elevator": "Elevator",
+      "garden": "Garden",
+      "insurance": "Insurance",
+      "other": "Other"
+    },
+    "uploadReceipt": "Upload Receipt"
+  },
+  "messages": {
+    "title": "Messages",
+    "newMessage": "New Message",
+    "messageTitle": "Title",
+    "content": "Content",
+    "expiresAt": "Expires At",
+    "sendEmail": "Send via Email",
+    "noMessages": "No messages"
+  },
+  "issues": {
+    "title": "Issues",
+    "reportIssue": "Report Issue",
+    "issueTitle": "Title",
+    "status": {
+      "open": "Open",
+      "inProgress": "In Progress",
+      "closed": "Closed"
+    },
+    "priority": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High"
+    },
+    "reportedBy": "Reported By",
+    "reportedAt": "Reported At"
+  },
+  "documents": {
+    "title": "Documents",
+    "uploadDocument": "Upload Document",
+    "documentTitle": "Document Name",
+    "category": "Category",
+    "categories": {
+      "regulation": "Regulation",
+      "insurance": "Insurance",
+      "protocol": "Protocol",
+      "standingOrder": "Standing Order",
+      "other": "Other"
+    },
+    "download": "Download",
+    "view": "View"
+  },
+  "reports": {
+    "title": "Reports",
+    "debtReport": "Debt Report",
+    "expensesReport": "Expenses Report",
+    "byMonth": "By Month",
+    "exportPdf": "Export to PDF"
+  },
+  "tenant": {
+    "welcome": "Welcome",
+    "myApartment": "My Apartment",
+    "myPayments": "My Payments",
+    "buildingMessages": "Building Messages",
+    "debtStatus": "Debt Status",
+    "noDebt": "No Debt",
+    "hasDebt": "You owe"
+  }
+}

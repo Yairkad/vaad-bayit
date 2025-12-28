@@ -1,0 +1,176 @@
+{
+  "common": {
+    "appName": "ועד בית",
+    "loading": "טוען...",
+    "save": "שמור",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "edit": "עריכה",
+    "add": "הוסף",
+    "search": "חיפוש",
+    "filter": "סינון",
+    "export": "ייצוא",
+    "back": "חזרה",
+    "next": "הבא",
+    "previous": "הקודם",
+    "yes": "כן",
+    "no": "לא",
+    "confirm": "אישור",
+    "close": "סגור",
+    "actions": "פעולות",
+    "status": "סטטוס",
+    "date": "תאריך",
+    "amount": "סכום",
+    "description": "תיאור",
+    "notes": "הערות",
+    "noData": "אין נתונים להצגה",
+    "error": "שגיאה",
+    "success": "הצלחה"
+  },
+  "auth": {
+    "login": "התחברות",
+    "register": "הרשמה",
+    "logout": "התנתקות",
+    "email": "אימייל",
+    "password": "סיסמה",
+    "confirmPassword": "אימות סיסמה",
+    "fullName": "שם מלא",
+    "phone": "טלפון",
+    "forgotPassword": "שכחתי סיסמה",
+    "resetPassword": "איפוס סיסמה",
+    "sendResetLink": "שלח קישור איפוס",
+    "loginTitle": "התחברות למערכת",
+    "registerTitle": "הרשמה למערכת",
+    "noAccount": "אין לך חשבון?",
+    "hasAccount": "יש לך חשבון?",
+    "invalidCredentials": "אימייל או סיסמה שגויים",
+    "emailSent": "נשלח אליך מייל לאיפוס הסיסמה",
+    "passwordMismatch": "הסיסמאות אינן תואמות"
+  },
+  "nav": {
+    "dashboard": "לוח בקרה",
+    "tenants": "דיירים",
+    "payments": "תשלומים",
+    "expenses": "הוצאות",
+    "messages": "הודעות",
+    "issues": "תקלות",
+    "documents": "מסמכים",
+    "reports": "דוחות",
+    "settings": "הגדרות",
+    "buildings": "בניינים",
+    "myArea": "האזור שלי"
+  },
+  "buildings": {
+    "title": "בניינים",
+    "addBuilding": "הוסף בניין",
+    "buildingName": "שם הבניין",
+    "address": "כתובת",
+    "city": "עיר",
+    "monthlyFee": "דמי ועד חודשיים",
+    "approve": "אשר",
+    "reject": "דחה",
+    "pending": "ממתין לאישור",
+    "approved": "מאושר",
+    "tenantsCount": "מספר דיירים"
+  },
+  "tenants": {
+    "title": "דיירים",
+    "addTenant": "הוסף דייר",
+    "editTenant": "ערוך דייר",
+    "tenantName": "שם הדייר",
+    "apartment": "דירה",
+    "paymentMethod": "שיטת תשלום",
+    "standingOrder": "הוראת קבע",
+    "cash": "מזומן",
+    "standingOrderActive": "הוראת קבע פעילה",
+    "uploadStandingOrder": "העלה צילום הוראת קבע",
+    "hasUser": "יש משתמש",
+    "noUser": "ללא משתמש",
+    "inviteUser": "הזמן למערכת"
+  },
+  "payments": {
+    "title": "תשלומים",
+    "month": "חודש",
+    "paid": "שולם",
+    "unpaid": "לא שולם",
+    "markAsPaid": "סמן כשולם",
+    "markAsUnpaid": "סמן כלא שולם",
+    "paymentReceipt": "אישור תשלום",
+    "generateReceipt": "הפק אישור",
+    "totalDebt": "סה״כ חוב",
+    "receiptDisclaimer": "אישור תשלום לצורכי תיעוד בלבד – לא קבלה"
+  },
+  "expenses": {
+    "title": "הוצאות",
+    "addExpense": "הוסף הוצאה",
+    "category": "קטגוריה",
+    "categories": {
+      "maintenance": "תחזוקה",
+      "cleaning": "ניקיון",
+      "electricity": "חשמל",
+      "water": "מים",
+      "elevator": "מעלית",
+      "garden": "גינון",
+      "insurance": "ביטוח",
+      "other": "אחר"
+    },
+    "uploadReceipt": "העלה קבלה"
+  },
+  "messages": {
+    "title": "הודעות",
+    "newMessage": "הודעה חדשה",
+    "messageTitle": "כותרת",
+    "content": "תוכן",
+    "expiresAt": "תוקף עד",
+    "sendEmail": "שלח גם במייל",
+    "noMessages": "אין הודעות"
+  },
+  "issues": {
+    "title": "תקלות",
+    "reportIssue": "דווח על תקלה",
+    "issueTitle": "כותרת",
+    "status": {
+      "open": "פתוחה",
+      "inProgress": "בטיפול",
+      "closed": "סגורה"
+    },
+    "priority": {
+      "low": "נמוכה",
+      "normal": "רגילה",
+      "high": "גבוהה"
+    },
+    "reportedBy": "דווח ע״י",
+    "reportedAt": "דווח בתאריך"
+  },
+  "documents": {
+    "title": "מסמכים",
+    "uploadDocument": "העלה מסמך",
+    "documentTitle": "שם המסמך",
+    "category": "קטגוריה",
+    "categories": {
+      "regulation": "תקנון",
+      "insurance": "ביטוח",
+      "protocol": "פרוטוקול",
+      "standingOrder": "הוראת קבע",
+      "other": "אחר"
+    },
+    "download": "הורדה",
+    "view": "צפייה"
+  },
+  "reports": {
+    "title": "דוחות",
+    "debtReport": "דוח חובות",
+    "expensesReport": "דוח הוצאות",
+    "byMonth": "לפי חודש",
+    "exportPdf": "ייצוא ל-PDF"
+  },
+  "tenant": {
+    "welcome": "שלום",
+    "myApartment": "הדירה שלי",
+    "myPayments": "התשלומים שלי",
+    "buildingMessages": "הודעות הבניין",
+    "debtStatus": "מצב חוב",
+    "noDebt": "אין חוב",
+    "hasDebt": "יש חוב של"
+  }
+}

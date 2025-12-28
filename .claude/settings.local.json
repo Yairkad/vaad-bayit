@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --yes)",
+      "Bash(xcopy /E /I /Y \"c:\\\\Users\\\\יאיר קדוש\\\\vaad-bayit\\\\*\" \"c:\\\\Users\\\\יאיר קדוש\\\\VAAD\"\" && rmdir /S /Q \"c:Usersיאיר קדושvaad-bayit \")",
+      "Bash(Move-Item -Path \"C:\\\\Users\\\\יאיר קדוש\\\\vaad-bayit\\\\*\" -Destination \"C:\\\\Users\\\\יאיר קדוש\\\\VAAD\"\" -Force; Remove-Item -Path \"C:Usersיאיר קדושvaad-bayit \" -Recurse -Force)",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
