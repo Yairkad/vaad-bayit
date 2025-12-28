@@ -224,9 +224,9 @@ export default function TenantsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('tenants.title')}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('tenants.title')}</h1>
           <p className="text-muted-foreground">{buildingName}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -369,7 +369,72 @@ export default function TenantsPage() {
         </Dialog>
       </div>
 
-      <Card>
+      {/* Mobile Cards View */}
+      <div className="md:hidden space-y-3">
+        {members.map((member) => (
+          <Card key={member.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">דירה {member.apartment_number}</span>
+                    <Badge variant={member.role === 'committee' ? 'default' : 'secondary'}>
+                      {member.role === 'committee' ? 'ועד' : 'דייר'}
+                    </Badge>
+                    {member.user_id ? (
+                      <UserCheck className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <UserX className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                  <p className="font-medium">{member.full_name}</p>
+                  {member.phone && (
+                    <p className="text-sm text-muted-foreground" dir="ltr">{member.phone}</p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {member.payment_method === 'standing_order' ? (
+                      <span className="flex items-center gap-1">
+                        {t('tenants.standingOrder')}
+                        {member.standing_order_active && (
+                          <Badge variant="outline" className="text-green-600 border-green-600 text-xs">פעיל</Badge>
+                        )}
+                      </span>
+                    ) : (
+                      t('tenants.cash')
+                    )}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEditDialog(member)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(member)}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {members.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              אין דיירים. לחץ על "הוסף דייר" להוספת הדייר הראשון.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="text-lg">
             {members.length} דיירים בבניין

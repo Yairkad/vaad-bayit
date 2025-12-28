@@ -54,8 +54,9 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
   };
 
   const handleNavigate = (href: string) => {
-    setIsOpen(false);
     router.push(href);
+    // Close sheet after a small delay to ensure navigation starts
+    setTimeout(() => setIsOpen(false), 100);
   };
 
   const initials = userName

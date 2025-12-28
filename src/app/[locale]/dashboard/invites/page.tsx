@@ -192,10 +192,10 @@ export default function InvitesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">קישורי הזמנה</h1>
-          <p className="text-muted-foreground">{building?.name} - שליחת קישורי הרשמה לדיירים</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">קישורי הזמנה</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">{building?.name} - שליחת קישורי הרשמה לדיירים</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -285,8 +285,79 @@ export default function InvitesPage() {
         </CardContent>
       </Card>
 
-      {/* Invites Table */}
-      <Card>
+      {/* Mobile Cards View */}
+      <div className="md:hidden space-y-3">
+        {invites.map((invite) => {
+          const expired = isExpired(invite.expires_at);
+          const maxedOut = isMaxedOut(invite);
+          const isValid = invite.is_active && !expired && !maxedOut;
+
+          return (
+            <Card key={invite.id} className={!isValid ? 'opacity-60' : ''}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-lg">{invite.code}</span>
+                      {!invite.is_active ? (
+                        <Badge variant="outline">מבוטל</Badge>
+                      ) : expired ? (
+                        <Badge variant="destructive">פג תוקף</Badge>
+                      ) : maxedOut ? (
+                        <Badge variant="secondary">מיצה שימושים</Badge>
+                      ) : (
+                        <Badge className="bg-green-600">פעיל</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={invite.default_role === 'committee' ? 'default' : 'secondary'}>
+                        {invite.default_role === 'committee' ? 'ועד' : 'דייר'}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {invite.uses_count}{invite.max_uses && ` / ${invite.max_uses}`} שימושים
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      תוקף: {invite.expires_at
+                        ? new Date(invite.expires_at).toLocaleDateString('he-IL')
+                        : 'ללא הגבלה'}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => copyLink(invite.code)}
+                      title="העתק קישור"
+                      disabled={!isValid}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteInvite(invite)}
+                      title="מחק"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+        {invites.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              אין קישורי הזמנה. לחץ על "צור קישור חדש" ליצירת הקישור הראשון.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="text-lg">קישורים פעילים</CardTitle>
         </CardHeader>

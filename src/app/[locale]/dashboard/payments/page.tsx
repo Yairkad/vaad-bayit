@@ -198,34 +198,36 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t('payments.title')}</h1>
-          <p className="text-muted-foreground">{building?.name}</p>
-        </div>
-        <div className="flex gap-4 items-center">
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {getMonthOptions().map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={generateMonthlyPayments} disabled={isGenerating}>
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <Plus className="ml-2 h-4 w-4" />
-                צור תשלומים לחודש
-              </>
-            )}
-          </Button>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">{t('payments.title')}</h1>
+            <p className="text-muted-foreground">{building?.name}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {getMonthOptions().map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={generateMonthlyPayments} disabled={isGenerating} className="w-full sm:w-auto">
+              {isGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Plus className="ml-2 h-4 w-4" />
+                  צור תשלומים לחודש
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -257,8 +259,69 @@ export default function PaymentsPage() {
         </Card>
       </div>
 
-      {/* Payments Table */}
-      <Card>
+      {/* Mobile Cards View */}
+      <div className="md:hidden space-y-3">
+        {payments.map((payment) => (
+          <Card key={payment.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">דירה {payment.building_members?.apartment_number}</span>
+                    <Badge variant={payment.is_paid ? 'default' : 'destructive'}>
+                      {payment.is_paid ? t('payments.paid') : t('payments.unpaid')}
+                    </Badge>
+                  </div>
+                  <p className="font-medium">{payment.building_members?.full_name}</p>
+                  <p className="text-lg font-bold">₪{Number(payment.amount).toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {payment.payment_method === 'standing_order'
+                      ? t('tenants.standingOrder')
+                      : t('tenants.cash')}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {payment.is_paid ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => togglePayment(payment, false)}
+                    >
+                      <X className="h-4 w-4 ml-1" />
+                      בטל
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => togglePayment(payment, true)}
+                    >
+                      <Check className="h-4 w-4 ml-1" />
+                      שולם
+                    </Button>
+                  )}
+                  {payment.is_paid && (
+                    <Button variant="ghost" size="sm">
+                      <FileText className="h-4 w-4 ml-1" />
+                      אישור
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {payments.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              אין תשלומים לחודש זה. לחץ על "צור תשלומים לחודש" ליצירת רשומות.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="text-lg">רשימת תשלומים</CardTitle>
         </CardHeader>
