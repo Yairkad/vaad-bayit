@@ -290,6 +290,47 @@ export interface Database {
           created_at?: string
         }
       }
+      building_invites: {
+        Row: {
+          id: string
+          building_id: string
+          code: string
+          default_role: MemberRole
+          default_apartment: string | null
+          uses_count: number
+          max_uses: number | null
+          expires_at: string | null
+          is_active: boolean
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          building_id: string
+          code: string
+          default_role?: MemberRole
+          default_apartment?: string | null
+          uses_count?: number
+          max_uses?: number | null
+          expires_at?: string | null
+          is_active?: boolean
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          building_id?: string
+          code?: string
+          default_role?: MemberRole
+          default_apartment?: string | null
+          uses_count?: number
+          max_uses?: number | null
+          expires_at?: string | null
+          is_active?: boolean
+          created_by?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -317,3 +358,4 @@ export type Expense = Tables<'expenses'>;
 export type Message = Tables<'messages'>;
 export type Issue = Tables<'issues'>;
 export type Document = Tables<'documents'>;
+export type BuildingInvite = Tables<'building_invites'>;

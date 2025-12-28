@@ -15,6 +15,7 @@ import {
   Building2,
   Settings,
   LogOut,
+  Link2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
@@ -39,6 +40,7 @@ export function Sidebar({ userRole }: SidebarProps) {
   const adminLinks = [
     { href: '/admin', icon: LayoutDashboard, label: t('dashboard') },
     { href: '/admin/buildings', icon: Building2, label: t('buildings') },
+    { href: '/admin/users', icon: Users, label: 'משתמשים' },
   ];
 
   const committeeLinks = [
@@ -50,6 +52,7 @@ export function Sidebar({ userRole }: SidebarProps) {
     { href: '/dashboard/issues', icon: AlertTriangle, label: t('issues') },
     { href: '/dashboard/documents', icon: FileText, label: t('documents') },
     { href: '/dashboard/reports', icon: BarChart3, label: t('reports') },
+    { href: '/dashboard/invites', icon: Link2, label: 'קישורי הזמנה' },
   ];
 
   const tenantLinks = [

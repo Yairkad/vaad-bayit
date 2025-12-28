@@ -1,28 +1,75 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Building2, Loader2 } from 'lucide-react';
-import type { InsertTables } from '@/types/database';
+import { Building2, Loader2, CheckCircle } from 'lucide-react';
+import type { InsertTables, BuildingInvite, Building } from '@/types/database';
+
+type InviteWithBuilding = BuildingInvite & { buildings: Building };
 
 export default function RegisterPage() {
   const t = useTranslations();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteCode = searchParams.get('invite');
+
   const [isLoading, setIsLoading] = useState(false);
+  const [invite, setInvite] = useState<InviteWithBuilding | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
+    apartmentNumber: '',
   });
+
+  useEffect(() => {
+    if (inviteCode) {
+      validateInvite(inviteCode);
+    }
+  }, [inviteCode]);
+
+  const validateInvite = async (code: string) => {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+      .from('building_invites')
+      .select('*, buildings(*)')
+      .eq('code', code)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !data) {
+      setInviteError('קוד הזמנה לא תקין');
+      return;
+    }
+
+    const inviteData = data as InviteWithBuilding;
+
+    // Check if expired
+    if (inviteData.expires_at && new Date(inviteData.expires_at) < new Date()) {
+      setInviteError('קוד ההזמנה פג תוקף');
+      return;
+    }
+
+    // Check if max uses reached
+    if (inviteData.max_uses && inviteData.uses_count >= inviteData.max_uses) {
+      setInviteError('קוד ההזמנה מיצה את מספר השימושים המותרים');
+      return;
+    }
+
+    setInvite(inviteData);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -36,6 +83,11 @@ export default function RegisterPage() {
 
     if (formData.password !== formData.confirmPassword) {
       toast.error(t('auth.passwordMismatch'));
+      return;
+    }
+
+    if (invite && !formData.apartmentNumber) {
+      toast.error('יש להזין מספר דירה');
       return;
     }
 
@@ -77,6 +129,31 @@ export default function RegisterPage() {
         if (profileError) {
           console.error('Profile creation error:', profileError);
         }
+
+        // If we have an invite, create building membership
+        if (invite) {
+          const { error: memberError } = await supabase
+            .from('building_members')
+            .insert({
+              building_id: invite.building_id,
+              user_id: authData.user.id,
+              full_name: formData.fullName,
+              apartment_number: formData.apartmentNumber,
+              role: invite.default_role,
+              phone: formData.phone || null,
+              email: formData.email,
+            } as never);
+
+          if (memberError) {
+            console.error('Membership creation error:', memberError);
+          } else {
+            // Update invite uses count
+            await supabase
+              .from('building_invites')
+              .update({ uses_count: invite.uses_count + 1 } as never)
+              .eq('id', invite.id);
+          }
+        }
       }
 
       toast.success(t('common.success'));
@@ -99,6 +176,33 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl">{t('auth.registerTitle')}</CardTitle>
           <CardDescription>{t('common.appName')}</CardDescription>
         </CardHeader>
+
+        {/* Invite Status Banner */}
+        {inviteCode && (
+          <div className="px-6 pb-4">
+            {invite ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-green-700">
+                  <CheckCircle className="h-5 w-5" />
+                  <div>
+                    <p className="font-medium">הזמנה לבניין: {invite.buildings.name}</p>
+                    <p className="text-sm text-green-600">{invite.buildings.address}</p>
+                  </div>
+                </div>
+              </div>
+            ) : inviteError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
+                {inviteError}
+              </div>
+            ) : (
+              <div className="bg-gray-50 border rounded-lg p-3 flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">מאמת קוד הזמנה...</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -138,6 +242,24 @@ export default function RegisterPage() {
                 disabled={isLoading}
               />
             </div>
+
+            {/* Apartment Number - only show if invite exists */}
+            {invite && (
+              <div className="space-y-2">
+                <Label htmlFor="apartmentNumber">מספר דירה *</Label>
+                <Input
+                  id="apartmentNumber"
+                  name="apartmentNumber"
+                  type="text"
+                  placeholder="לדוגמה: 5"
+                  value={formData.apartmentNumber}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
@@ -166,7 +288,7 @@ export default function RegisterPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || (inviteCode && !invite)}>
               {isLoading ? (
                 <>
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
