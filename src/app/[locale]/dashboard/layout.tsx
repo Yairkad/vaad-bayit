@@ -53,7 +53,7 @@ export default async function DashboardLayout({
 
       {/* Main content */}
       <div className="md:mr-64">
-        <Header userName={userName} buildingName={buildingName} />
+        <Header userName={userName} buildingName={buildingName} userRole={userRole} />
         <main className="p-6">
           {children}
         </main>
