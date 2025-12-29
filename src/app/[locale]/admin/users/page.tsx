@@ -186,7 +186,7 @@ export default function AdminUsersPage() {
 
     const { error } = await supabase
       .from('building_members')
-      .update({ role: newRole })
+      .update({ role: newRole } as never)
       .eq('id', membershipId);
 
     if (error) {
