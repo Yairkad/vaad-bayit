@@ -77,30 +77,40 @@ export default function AdminUsersPage() {
       setCurrentUserId(currentUser.id);
     }
 
-    // Get profiles with building members
+    // Get profiles
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
 
-    // Get building members separately
+    // Get building members separately (without nested join)
     const { data: membersData } = await supabase
       .from('building_members')
-      .select('*, buildings(*)');
+      .select('*');
 
-    // Merge the data
+    // Get all buildings for lookup
+    const { data: allBuildingsData } = await supabase
+      .from('buildings')
+      .select('*');
+
+    // Create a buildings lookup map
+    const buildingsMap = new Map<string, Building>();
+    (allBuildingsData || []).forEach((b: Building) => buildingsMap.set(b.id, b));
+
+    // Merge building data into members
     const profiles = profilesData as Profile[] || [];
-    const members = membersData as (BuildingMember & { buildings: Building | null })[] || [];
+    const members = (membersData as BuildingMember[] || []).map(m => ({
+      ...m,
+      buildings: buildingsMap.get(m.building_id) || null,
+    }));
+
     const profilesWithMembers = profiles.map(profile => ({
       ...profile,
       building_members: members.filter(m => m.user_id === profile.id),
     }));
 
-    const { data: buildingsData } = await supabase
-      .from('buildings')
-      .select('*')
-      .eq('is_approved', true)
-      .order('name');
+    // Get approved buildings for the dropdown
+    const approvedBuildings = (allBuildingsData || []).filter((b: Building) => b.is_approved);
 
     // Filter out current user from the list
     const filteredUsers = profilesWithMembers.filter(
@@ -108,7 +118,7 @@ export default function AdminUsersPage() {
     ) as ProfileWithMembership[];
 
     setUsers(filteredUsers);
-    setBuildings(buildingsData || []);
+    setBuildings(approvedBuildings);
     setIsLoading(false);
   };
 
@@ -176,14 +186,9 @@ export default function AdminUsersPage() {
     } else {
       toast.success('השיוך נוסף בהצלחה');
       setNewMembership({ building_id: '', apartment_number: '', role: 'tenant' });
-      loadData();
-      // Refresh selected user
-      const { data } = await supabase
-        .from('profiles')
-        .select('*, building_members(*, buildings(*))')
-        .eq('id', selectedUser.id)
-        .single();
-      if (data) setSelectedUser(data as ProfileWithMembership);
+      await loadData();
+      // Refresh selected user from updated users state
+      setIsDialogOpen(false);
     }
     setIsSaving(false);
   };
@@ -201,16 +206,9 @@ export default function AdminUsersPage() {
       toast.error('שגיאה בהסרת שיוך');
     } else {
       toast.success('השיוך הוסר');
-      loadData();
-      // Refresh selected user
-      if (selectedUser) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*, building_members(*, buildings(*))')
-          .eq('id', selectedUser.id)
-          .single();
-        if (data) setSelectedUser(data as ProfileWithMembership);
-      }
+      await loadData();
+      // Close dialog after removal
+      setIsDialogOpen(false);
     }
     setIsSaving(false);
   };
