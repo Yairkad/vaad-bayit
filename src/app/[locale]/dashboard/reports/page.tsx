@@ -12,7 +12,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, FileText, TrendingUp, TrendingDown, Users, AlertTriangle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, FileText, TrendingUp, TrendingDown, Users, AlertTriangle, ChevronLeft } from 'lucide-react';
 import type { Payment, Expense, BuildingMember, Building } from '@/types/database';
 
 type PaymentWithMember = Payment & { building_members: BuildingMember };
@@ -26,6 +42,7 @@ export default function ReportsPage() {
   const [payments, setPayments] = useState<PaymentWithMember[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -134,12 +151,24 @@ export default function ReportsPage() {
     const monthExpenses = expenses.filter(e => e.expense_date.startsWith(monthStr));
 
     return {
+      monthIndex: i,
       month: new Date(parseInt(selectedYear), i, 1).toLocaleDateString('he-IL', { month: 'short' }),
+      monthFull: new Date(parseInt(selectedYear), i, 1).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' }),
       expected: monthPayments.reduce((sum, p) => sum + Number(p.amount), 0),
       paid: monthPayments.filter(p => p.is_paid).reduce((sum, p) => sum + Number(p.amount), 0),
       expenses: monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0),
+      payments: monthPayments,
+      expensesList: monthExpenses,
     };
   });
+
+  // Get data for selected month
+  const getSelectedMonthData = () => {
+    if (selectedMonth === null) return null;
+    return monthlyData[selectedMonth];
+  };
+
+  const selectedMonthData = getSelectedMonthData();
 
   if (isLoading) {
     return (
@@ -236,13 +265,20 @@ export default function ReportsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">פירוט חודשי</CardTitle>
-            <CardDescription>הכנסות והוצאות לפי חודש</CardDescription>
+            <CardDescription>לחץ על חודש לצפייה בפירוט מלא</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-1">
               {monthlyData.map((data, i) => (
-                <div key={i} className="flex items-center justify-between text-sm border-b pb-2">
-                  <span className="font-medium w-16">{data.month}</span>
+                <div
+                  key={i}
+                  className="flex items-center justify-between text-sm border-b pb-2 hover:bg-muted/50 cursor-pointer rounded px-2 py-1 -mx-2 transition-colors"
+                  onClick={() => setSelectedMonth(data.monthIndex)}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium w-16">{data.month}</span>
+                    <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                  </div>
                   <div className="flex gap-4">
                     <span className="text-green-600">+₪{data.paid.toLocaleString()}</span>
                     <span className="text-red-600">-₪{data.expenses.toLocaleString()}</span>
@@ -324,6 +360,117 @@ export default function ReportsPage() {
           הדפס דוח
         </Button>
       </div>
+
+      {/* Month Detail Dialog */}
+      <Dialog open={selectedMonth !== null} onOpenChange={(open) => !open && setSelectedMonth(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              פירוט {selectedMonthData?.monthFull}
+            </DialogTitle>
+            <DialogDescription>
+              הכנסות והוצאות מפורטות לחודש זה
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedMonthData && (
+            <div className="space-y-6 py-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-4">
+                    <p className="text-sm text-muted-foreground">הכנסות</p>
+                    <p className="text-2xl font-bold text-green-600">₪{selectedMonthData.paid.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">מתוך ₪{selectedMonthData.expected.toLocaleString()} צפוי</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <p className="text-sm text-muted-foreground">הוצאות</p>
+                    <p className="text-2xl font-bold text-red-600">₪{selectedMonthData.expenses.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <p className="text-sm text-muted-foreground">מאזן</p>
+                    <p className={`text-2xl font-bold ${selectedMonthData.paid - selectedMonthData.expenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ₪{(selectedMonthData.paid - selectedMonthData.expenses).toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Payments Table */}
+              <div>
+                <h3 className="font-semibold mb-3">תשלומי דיירים</h3>
+                {selectedMonthData.payments.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>דירה</TableHead>
+                        <TableHead>שם</TableHead>
+                        <TableHead>סכום</TableHead>
+                        <TableHead>סטטוס</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedMonthData.payments
+                        .sort((a, b) => (a.building_members?.apartment_number || '').localeCompare(b.building_members?.apartment_number || '', 'he', { numeric: true }))
+                        .map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell className="font-medium">{payment.building_members?.apartment_number}</TableCell>
+                            <TableCell>{payment.building_members?.full_name}</TableCell>
+                            <TableCell>₪{Number(payment.amount).toLocaleString()}</TableCell>
+                            <TableCell>
+                              {payment.is_paid ? (
+                                <Badge className="bg-green-600">שולם</Badge>
+                              ) : (
+                                <Badge variant="destructive">לא שולם</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">אין תשלומים בחודש זה</p>
+                )}
+              </div>
+
+              {/* Expenses Table */}
+              <div>
+                <h3 className="font-semibold mb-3">הוצאות</h3>
+                {selectedMonthData.expensesList.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>תאריך</TableHead>
+                        <TableHead>קטגוריה</TableHead>
+                        <TableHead>תיאור</TableHead>
+                        <TableHead>סכום</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedMonthData.expensesList
+                        .sort((a, b) => new Date(a.expense_date).getTime() - new Date(b.expense_date).getTime())
+                        .map((expense) => (
+                          <TableRow key={expense.id}>
+                            <TableCell>{new Date(expense.expense_date).toLocaleDateString('he-IL')}</TableCell>
+                            <TableCell>{expense.category}</TableCell>
+                            <TableCell>{expense.description || '-'}</TableCell>
+                            <TableCell className="text-red-600">₪{Number(expense.amount).toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">אין הוצאות בחודש זה</p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

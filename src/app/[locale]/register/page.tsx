@@ -113,47 +113,59 @@ function RegisterForm() {
         return;
       }
 
-      // Create/update profile - use upsert in case trigger already created it
-      if (authData.user) {
-        const profileData: InsertTables<'profiles'> = {
-          id: authData.user.id,
-          full_name: formData.fullName,
-          phone: formData.phone || null,
-          role: 'tenant',
-        };
+      // Wait for session to be established
+      if (authData.session) {
+        // User is logged in immediately (no email confirmation required)
+        const userId = authData.user?.id;
 
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert(profileData as never, { onConflict: 'id' });
+        if (userId) {
+          // Create/update profile
+          const profileData: InsertTables<'profiles'> = {
+            id: userId,
+            full_name: formData.fullName,
+            phone: formData.phone || null,
+            role: 'tenant',
+          };
 
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-        }
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert(profileData as never, { onConflict: 'id' });
 
-        // If we have an invite, create building membership
-        if (invite) {
-          const { error: memberError } = await supabase
-            .from('building_members')
-            .insert({
-              building_id: invite.building_id,
-              user_id: authData.user.id,
-              full_name: formData.fullName,
-              apartment_number: formData.apartmentNumber,
-              role: invite.default_role,
-              phone: formData.phone || null,
-              email: formData.email,
-            } as never);
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+          }
 
-          if (memberError) {
-            console.error('Membership creation error:', memberError);
-          } else {
-            // Update invite uses count
-            await supabase
-              .from('building_invites')
-              .update({ uses_count: invite.uses_count + 1 } as never)
-              .eq('id', invite.id);
+          // If we have an invite, create building membership
+          if (invite) {
+            const { error: memberError } = await supabase
+              .from('building_members')
+              .insert({
+                building_id: invite.building_id,
+                user_id: userId,
+                full_name: formData.fullName,
+                apartment_number: formData.apartmentNumber,
+                role: invite.default_role,
+                phone: formData.phone || null,
+                email: formData.email,
+              } as never);
+
+            if (memberError) {
+              console.error('Membership creation error:', memberError);
+              toast.error('שגיאה בהוספה לבניין: ' + memberError.message);
+            } else {
+              // Update invite uses count
+              await supabase
+                .from('building_invites')
+                .update({ uses_count: invite.uses_count + 1 } as never)
+                .eq('id', invite.id);
+            }
           }
         }
+      } else if (authData.user) {
+        // Email confirmation required - show message
+        toast.info('נשלח אליך מייל לאימות. אנא אמת את המייל והתחבר שוב.');
+        router.push('/login');
+        return;
       }
 
       toast.success(t('common.success'));
@@ -178,17 +190,23 @@ function RegisterForm() {
 
       {/* Invite Status Banner */}
       {inviteCode && (
-        <div className="px-6 pb-4">
+        <div className="px-6 pb-4 space-y-3">
           {invite ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-green-700">
-                <CheckCircle className="h-5 w-5" />
-                <div>
-                  <p className="font-medium">הזמנה לבניין: {invite.buildings.name}</p>
-                  <p className="text-sm text-green-600">{invite.buildings.address}</p>
+            <>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-green-700">
+                  <CheckCircle className="h-5 w-5" />
+                  <div>
+                    <p className="font-medium">הזמנה לבניין: {invite.buildings.name}</p>
+                    <p className="text-sm text-green-600">{invite.buildings.address}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                <p className="font-medium">שימו לב:</p>
+                <p>לאחר ההרשמה יישלח אליכם מייל לאימות. יש לאמת את המייל על מנת להתחבר למערכת.</p>
+              </div>
+            </>
           ) : inviteError ? (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">
               {inviteError}

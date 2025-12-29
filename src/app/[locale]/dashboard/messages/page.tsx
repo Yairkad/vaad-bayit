@@ -17,22 +17,32 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, Clock, Mail } from 'lucide-react';
-import type { Message, Building, BuildingMember } from '@/types/database';
+import { Plus, Trash2, Loader2, Clock, Mail, Users, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
+import type { Message, Building, BuildingMember, MessageResponse } from '@/types/database';
+
+type MessageWithResponses = Message & {
+  responses?: (MessageResponse & { building_members: BuildingMember })[];
+};
+
 
 export default function MessagesPage() {
   const t = useTranslations();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageWithResponses[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [building, setBuilding] = useState<Building | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedResponses, setExpandedResponses] = useState<Record<string, 'yes' | 'no' | null>>({});
 
   const [formData, setFormData] = useState({
     title: '',
     content: '',
+    requires_response: false,
+    yes_label: '',
+    no_label: '',
     expires_at: '',
     send_email: false,
   });
@@ -59,13 +69,32 @@ export default function MessagesPage() {
       setBuildingId(membership.building_id);
       setBuilding(membership.buildings as Building);
 
+      // Load messages
       const { data: messagesData } = await supabase
         .from('messages')
         .select('*')
         .eq('building_id', membership.building_id)
         .order('created_at', { ascending: false });
 
-      setMessages(messagesData || []);
+      // Load responses for each message
+      const messagesWithResponses: MessageWithResponses[] = [];
+      for (const message of messagesData || []) {
+        // Check if message requires response (has yes_label and no_label)
+        if (message.yes_label && message.no_label) {
+          const { data: responses } = await supabase
+            .from('message_responses')
+            .select('*, building_members(*)')
+            .eq('message_id', message.id);
+          messagesWithResponses.push({
+            ...message,
+            responses: responses as (MessageResponse & { building_members: BuildingMember })[] || [],
+          });
+        } else {
+          messagesWithResponses.push({ ...message, responses: [] });
+        }
+      }
+
+      setMessages(messagesWithResponses);
     }
 
     setIsLoading(false);
@@ -75,6 +104,9 @@ export default function MessagesPage() {
     setFormData({
       title: '',
       content: '',
+      requires_response: false,
+      yes_label: '',
+      no_label: '',
       expires_at: '',
       send_email: false,
     });
@@ -95,6 +127,9 @@ export default function MessagesPage() {
           building_id: buildingId,
           title: formData.title,
           content: formData.content,
+          message_type: formData.requires_response ? 'vote' : 'announcement',
+          yes_label: formData.requires_response ? formData.yes_label : null,
+          no_label: formData.requires_response ? formData.no_label : null,
           expires_at: formData.expires_at || null,
           send_email: formData.send_email,
           created_by: user?.id,
@@ -118,6 +153,14 @@ export default function MessagesPage() {
     if (!confirm('האם למחוק את ההודעה?')) return;
 
     const supabase = createClient();
+
+    // First delete responses
+    await supabase
+      .from('message_responses')
+      .delete()
+      .eq('message_id', message.id);
+
+    // Then delete message
     const { error } = await supabase
       .from('messages')
       .delete()
@@ -135,6 +178,23 @@ export default function MessagesPage() {
   const isExpired = (expiresAt: string | null) => {
     if (!expiresAt) return false;
     return new Date(expiresAt) < new Date();
+  };
+
+  const toggleResponsesView = (messageId: string, type: 'yes' | 'no') => {
+    setExpandedResponses(prev => ({
+      ...prev,
+      [messageId]: prev[messageId] === type ? null : type,
+    }));
+  };
+
+  const getResponseCounts = (responses: (MessageResponse & { building_members: BuildingMember })[]) => {
+    const yes = responses.filter(r => r.response === 'yes');
+    const no = responses.filter(r => r.response === 'no');
+    return { yes, no };
+  };
+
+  const requiresResponse = (message: Message) => {
+    return message.yes_label && message.no_label;
   };
 
   if (isLoading) {
@@ -204,6 +264,49 @@ export default function MessagesPage() {
                   />
                 </div>
 
+                {/* Response Toggle */}
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <input
+                    type="checkbox"
+                    id="requires_response"
+                    checked={formData.requires_response}
+                    onChange={(e) => setFormData({ ...formData, requires_response: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="requires_response" className="flex items-center gap-2 cursor-pointer">
+                    <Users className="h-4 w-4" />
+                    אפשר לדיירים לענות על ההודעה
+                  </Label>
+                </div>
+
+                {formData.requires_response && (
+                  <div className="grid grid-cols-2 gap-4 p-3 border rounded-lg">
+                    <div className="space-y-2">
+                      <Label htmlFor="yes_label">טקסט כפתור ראשון *</Label>
+                      <Input
+                        id="yes_label"
+                        value={formData.yes_label}
+                        onChange={(e) => setFormData({ ...formData, yes_label: e.target.value })}
+                        placeholder="לדוגמה: אשתתף, מסכים, בעד"
+                        required={formData.requires_response}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="no_label">טקסט כפתור שני *</Label>
+                      <Input
+                        id="no_label"
+                        value={formData.no_label}
+                        onChange={(e) => setFormData({ ...formData, no_label: e.target.value })}
+                        placeholder="לדוגמה: לא אשתתף, לא מסכים, נגד"
+                        required={formData.requires_response}
+                      />
+                    </div>
+                    <p className="col-span-2 text-xs text-muted-foreground">
+                      הדיירים יראו את שני הכפתורים האלה ויוכלו לבחור אחד מהם
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="expires_at">{t('messages.expiresAt')}</Label>
                   <Input
@@ -246,48 +349,122 @@ export default function MessagesPage() {
 
       {/* Messages List */}
       <div className="space-y-4">
-        {messages.map((message) => (
-          <Card key={message.id} className={isExpired(message.expires_at) ? 'opacity-60' : ''}>
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">{message.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-4 mt-1">
-                    <span>
-                      {new Date(message.created_at).toLocaleDateString('he-IL', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </span>
-                    {message.expires_at && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {isExpired(message.expires_at) ? 'פג תוקף' : `עד ${new Date(message.expires_at).toLocaleDateString('he-IL')}`}
+        {messages.map((message) => {
+          const { yes: yesResponses, no: noResponses } = getResponseCounts(message.responses || []);
+          const expanded = expandedResponses[message.id];
+
+          return (
+            <Card key={message.id} className={isExpired(message.expires_at) ? 'opacity-60' : ''}>
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <CardTitle className="text-lg">{message.title}</CardTitle>
+                      {requiresResponse(message) && (
+                        <Badge variant="secondary">
+                          דורש תשובה
+                        </Badge>
+                      )}
+                    </div>
+                    <CardDescription className="flex items-center gap-4 mt-1">
+                      <span>
+                        {new Date(message.created_at).toLocaleDateString('he-IL', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
                       </span>
-                    )}
-                    {message.send_email && (
-                      <span className="flex items-center gap-1 text-blue-600">
-                        <Mail className="h-3 w-3" />
-                        נשלח במייל
-                      </span>
-                    )}
-                  </CardDescription>
+                      {message.expires_at && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {isExpired(message.expires_at) ? 'פג תוקף' : `עד ${new Date(message.expires_at).toLocaleDateString('he-IL')}`}
+                        </span>
+                      )}
+                      {message.send_email && (
+                        <span className="flex items-center gap-1 text-blue-600">
+                          <Mail className="h-3 w-3" />
+                          נשלח במייל
+                        </span>
+                      )}
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(message)}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(message)}
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            </CardContent>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="whitespace-pre-wrap">{message.content}</p>
+
+                {/* Response Summary */}
+                {requiresResponse(message) && (
+                  <div className="border-t pt-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Users className="h-4 w-4" />
+                      <span className="font-medium">תשובות ({(message.responses?.length || 0)})</span>
+                    </div>
+
+                    <div className="flex gap-3">
+                      {/* Yes Button */}
+                      <Button
+                        variant={expanded === 'yes' ? 'default' : 'outline'}
+                        size="sm"
+                        className="flex items-center gap-2"
+                        onClick={() => toggleResponsesView(message.id, 'yes')}
+                      >
+                        <ThumbsUp className="h-4 w-4" />
+                        <span>{message.yes_label || 'כן'}</span>
+                        <Badge variant="secondary" className="mr-1">
+                          {yesResponses.length}
+                        </Badge>
+                        {expanded === 'yes' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </Button>
+
+                      {/* No Button */}
+                      <Button
+                        variant={expanded === 'no' ? 'default' : 'outline'}
+                        size="sm"
+                        className="flex items-center gap-2"
+                        onClick={() => toggleResponsesView(message.id, 'no')}
+                      >
+                        <ThumbsDown className="h-4 w-4" />
+                        <span>{message.no_label || 'לא'}</span>
+                        <Badge variant="secondary" className="mr-1">
+                          {noResponses.length}
+                        </Badge>
+                        {expanded === 'no' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </Button>
+                    </div>
+
+                    {/* Expanded Responses List */}
+                    {expanded && (
+                      <div className="mt-3 p-3 bg-muted rounded-lg">
+                        <p className="font-medium mb-2">
+                          {expanded === 'yes' ? message.yes_label || 'כן' : message.no_label || 'לא'}:
+                        </p>
+                        <div className="space-y-1">
+                          {(expanded === 'yes' ? yesResponses : noResponses).map((response) => (
+                            <div key={response.id} className="flex items-center gap-2 text-sm">
+                              <span>דירה {response.building_members?.apartment_number}:</span>
+                              <span className="font-medium">{response.building_members?.full_name}</span>
+                            </div>
+                          ))}
+                          {(expanded === 'yes' ? yesResponses : noResponses).length === 0 && (
+                            <p className="text-sm text-muted-foreground">אין תשובות</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
 
         {messages.length === 0 && (
           <Card>

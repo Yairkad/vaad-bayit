@@ -12,6 +12,8 @@ export type MemberRole = 'committee' | 'tenant';
 export type IssueStatus = 'open' | 'in_progress' | 'closed';
 export type IssuePriority = 'low' | 'normal' | 'high';
 export type DocumentCategory = 'regulation' | 'insurance' | 'protocol' | 'standing_order' | 'other';
+export type MessageType = 'announcement' | 'meeting' | 'vote';
+export type ResponseType = 'yes' | 'no';
 
 export interface Database {
   public: {
@@ -197,6 +199,9 @@ export interface Database {
           building_id: string
           title: string
           content: string
+          message_type: MessageType
+          yes_label: string | null
+          no_label: string | null
           expires_at: string | null
           send_email: boolean
           created_by: string | null
@@ -207,6 +212,9 @@ export interface Database {
           building_id: string
           title: string
           content: string
+          message_type?: MessageType
+          yes_label?: string | null
+          no_label?: string | null
           expires_at?: string | null
           send_email?: boolean
           created_by?: string | null
@@ -217,9 +225,35 @@ export interface Database {
           building_id?: string
           title?: string
           content?: string
+          message_type?: MessageType
+          yes_label?: string | null
+          no_label?: string | null
           expires_at?: string | null
           send_email?: boolean
           created_by?: string | null
+          created_at?: string
+        }
+      }
+      message_responses: {
+        Row: {
+          id: string
+          message_id: string
+          member_id: string
+          response: ResponseType
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          member_id: string
+          response: ResponseType
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          member_id?: string
+          response?: ResponseType
           created_at?: string
         }
       }
@@ -359,3 +393,4 @@ export type Message = Tables<'messages'>;
 export type Issue = Tables<'issues'>;
 export type Document = Tables<'documents'>;
 export type BuildingInvite = Tables<'building_invites'>;
+export type MessageResponse = Tables<'message_responses'>;

@@ -391,6 +391,9 @@ export default function TenantsPage() {
                   {member.phone && (
                     <p className="text-sm text-muted-foreground" dir="ltr">{member.phone}</p>
                   )}
+                  {member.email && (
+                    <p className="text-sm text-muted-foreground">{member.email}</p>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     {member.payment_method === 'standing_order' ? (
                       <span className="flex items-center gap-1">
@@ -447,6 +450,7 @@ export default function TenantsPage() {
                 <TableHead>{t('tenants.apartment')}</TableHead>
                 <TableHead>{t('tenants.tenantName')}</TableHead>
                 <TableHead>{t('auth.phone')}</TableHead>
+                <TableHead>{t('auth.email')}</TableHead>
                 <TableHead>תפקיד</TableHead>
                 <TableHead>{t('tenants.paymentMethod')}</TableHead>
                 <TableHead>משתמש</TableHead>
@@ -459,6 +463,7 @@ export default function TenantsPage() {
                   <TableCell className="font-medium">{member.apartment_number}</TableCell>
                   <TableCell>{member.full_name}</TableCell>
                   <TableCell dir="ltr" className="text-left">{member.phone || '-'}</TableCell>
+                  <TableCell>{member.email || '-'}</TableCell>
                   <TableCell>
                     <Badge variant={member.role === 'committee' ? 'default' : 'secondary'}>
                       {member.role === 'committee' ? 'ועד' : 'דייר'}
@@ -505,7 +510,7 @@ export default function TenantsPage() {
               ))}
               {members.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     אין דיירים. לחץ על "הוסף דייר" להוספת הדייר הראשון.
                   </TableCell>
                 </TableRow>

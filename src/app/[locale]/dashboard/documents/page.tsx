@@ -177,7 +177,7 @@ export default function DocumentsPage() {
     const supabase = createClient();
     const { data } = await supabase.storage
       .from('documents')
-      .createSignedUrl(filePath, 3600); // 1 hour
+      .createSignedUrl(filePath, 900); // 15 minutes
 
     return data?.signedUrl;
   };
