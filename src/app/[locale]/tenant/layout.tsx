@@ -41,7 +41,7 @@ export default function TenantLayout({
       .from('profiles')
       .select('full_name, role')
       .eq('id', user.id)
-      .single();
+      .single() as { data: { full_name: string | null; role: string | null } | null };
 
     // Get building membership
     const { data: membership } = await supabase
