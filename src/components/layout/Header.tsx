@@ -29,6 +29,7 @@ import {
   FileText,
   BarChart3,
   Link2,
+  Inbox,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -66,6 +67,7 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
     { href: '/admin', icon: LayoutDashboard, label: tNav('dashboard') },
     { href: '/admin/buildings', icon: Building2, label: tNav('buildings') },
     { href: '/admin/users', icon: Users, label: 'משתמשים' },
+    { href: '/admin/requests', icon: Inbox, label: 'פניות חדשות' },
   ];
 
   const committeeLinks = [

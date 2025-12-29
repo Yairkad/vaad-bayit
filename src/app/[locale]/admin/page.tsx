@@ -3,17 +3,16 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, Users, CheckCircle, Clock, Shield, UserCheck } from 'lucide-react';
+import { Building2, Users, Shield, UserCheck, Inbox } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { Loader2 } from 'lucide-react';
 
 interface Stats {
   totalBuildings: number;
-  approvedBuildings: number;
-  pendingBuildings: number;
   totalUsers: number;
   adminUsers: number;
   usersWithBuilding: number;
+  newRequests: number;
 }
 
 export default function AdminDashboardPage() {
@@ -30,27 +29,24 @@ export default function AdminDashboardPage() {
 
     const [
       { count: totalBuildings },
-      { count: approvedBuildings },
-      { count: pendingBuildings },
       { count: totalUsers },
       { count: adminUsers },
       { count: usersWithBuilding },
+      { count: newRequests },
     ] = await Promise.all([
       supabase.from('buildings').select('*', { count: 'exact', head: true }),
-      supabase.from('buildings').select('*', { count: 'exact', head: true }).eq('is_approved', true),
-      supabase.from('buildings').select('*', { count: 'exact', head: true }).eq('is_approved', false),
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
       supabase.from('building_members').select('user_id', { count: 'exact', head: true }).not('user_id', 'is', null),
+      supabase.from('contact_requests').select('*', { count: 'exact', head: true }).eq('status', 'new'),
     ]);
 
     setStats({
       totalBuildings: totalBuildings || 0,
-      approvedBuildings: approvedBuildings || 0,
-      pendingBuildings: pendingBuildings || 0,
       totalUsers: totalUsers || 0,
       adminUsers: adminUsers || 0,
       usersWithBuilding: usersWithBuilding || 0,
+      newRequests: newRequests || 0,
     });
     setIsLoading(false);
   };
@@ -62,22 +58,6 @@ export default function AdminDashboardPage() {
       icon: Building2,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
-      href: '/admin/buildings',
-    },
-    {
-      title: 'בניינים מאושרים',
-      value: stats?.approvedBuildings || 0,
-      icon: CheckCircle,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-      href: '/admin/buildings',
-    },
-    {
-      title: 'ממתינים לאישור',
-      value: stats?.pendingBuildings || 0,
-      icon: Clock,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
       href: '/admin/buildings',
     },
     {
@@ -104,6 +84,14 @@ export default function AdminDashboardPage() {
       bgColor: 'bg-teal-100',
       href: '/admin/buildings',
     },
+    {
+      title: 'פניות חדשות',
+      value: stats?.newRequests || 0,
+      icon: Inbox,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100',
+      href: '/admin/requests',
+    },
   ];
 
   if (isLoading) {
@@ -122,7 +110,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stats Grid - Compact on mobile */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
         {cards.map((card, index) => (
           <Card
             key={index}
