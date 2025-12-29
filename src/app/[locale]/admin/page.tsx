@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Building2, Users, UserCheck, UserX, Inbox, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
-import { StatCard, type StatCardVariant } from '@/components/ui/stat-card';
+import { StatCard, type StatCardVariant, type StatCardIcon } from '@/components/ui/stat-card';
 
 interface Stats {
   totalBuildings: number;
@@ -62,42 +62,42 @@ export default function AdminDashboardPage() {
   const cards: {
     title: string;
     value: number;
-    icon: typeof Building2;
+    icon: StatCardIcon;
     variant: StatCardVariant;
     href: string;
   }[] = [
     {
       title: 'סה״כ בניינים',
       value: stats?.totalBuildings || 0,
-      icon: Building2,
+      icon: 'building',
       variant: 'blue',
       href: '/admin/buildings',
     },
     {
       title: 'סה״כ משתמשים',
       value: stats?.totalUsers || 0,
-      icon: Users,
+      icon: 'users',
       variant: 'purple',
       href: '/admin/users',
     },
     {
       title: 'מנהלי בניין / ועד',
       value: stats?.committeeUsers || 0,
-      icon: UserCheck,
+      icon: 'user-check',
       variant: 'teal',
       href: '/admin/users',
     },
     {
       title: 'לא משויכים',
       value: stats?.usersWithoutBuilding || 0,
-      icon: UserX,
+      icon: 'user-x',
       variant: 'red',
       href: '/admin/users',
     },
     {
       title: 'פניות חדשות',
       value: stats?.newRequests || 0,
-      icon: Inbox,
+      icon: 'inbox',
       variant: 'orange',
       href: '/admin/requests',
     },

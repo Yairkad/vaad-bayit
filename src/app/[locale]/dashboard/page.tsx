@@ -1,9 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CreditCard, AlertTriangle, Receipt } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import type { Building, Expense } from '@/types/database';
-import { StatCard, type StatCardVariant } from '@/components/ui/stat-card';
+import { StatCard, type StatCardVariant, type StatCardIcon } from '@/components/ui/stat-card';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -80,35 +79,35 @@ export default async function DashboardPage() {
   const cards: {
     title: string;
     value: string | number;
-    icon: typeof Users;
+    icon: StatCardIcon;
     variant: StatCardVariant;
     href: string;
   }[] = [
     {
       title: 'דיירים',
       value: stats.tenants,
-      icon: Users,
+      icon: 'users',
       variant: 'blue',
       href: '/dashboard/tenants',
     },
     {
       title: 'תשלומים שלא שולמו',
       value: stats.unpaidPayments,
-      icon: CreditCard,
+      icon: 'credit-card',
       variant: 'red',
       href: '/dashboard/payments',
     },
     {
       title: 'תקלות פתוחות',
       value: stats.openIssues,
-      icon: AlertTriangle,
+      icon: 'alert-triangle',
       variant: 'orange',
       href: '/dashboard/issues',
     },
     {
       title: 'הוצאות החודש',
       value: `₪${stats.monthlyExpenses.toLocaleString()}`,
-      icon: Receipt,
+      icon: 'receipt',
       variant: 'green',
       href: '/dashboard/expenses',
     },

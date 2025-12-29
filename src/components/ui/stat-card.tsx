@@ -3,9 +3,19 @@
 import * as React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { LucideIcon } from 'lucide-react';
+import {
+  Users,
+  CreditCard,
+  AlertTriangle,
+  Receipt,
+  Building2,
+  UserCheck,
+  UserX,
+  Inbox
+} from 'lucide-react';
 
 export type StatCardVariant = 'blue' | 'purple' | 'teal' | 'red' | 'orange' | 'green' | 'amber';
+export type StatCardIcon = 'users' | 'credit-card' | 'alert-triangle' | 'receipt' | 'building' | 'user-check' | 'user-x' | 'inbox';
 
 const variantStyles: Record<StatCardVariant, { bg: string; text: string; darkBg: string }> = {
   blue: { bg: 'bg-blue-100', text: 'text-blue-600', darkBg: 'dark:bg-blue-950' },
@@ -17,10 +27,21 @@ const variantStyles: Record<StatCardVariant, { bg: string; text: string; darkBg:
   amber: { bg: 'bg-amber-100', text: 'text-amber-600', darkBg: 'dark:bg-amber-950' },
 };
 
+const iconMap: Record<StatCardIcon, typeof Users> = {
+  'users': Users,
+  'credit-card': CreditCard,
+  'alert-triangle': AlertTriangle,
+  'receipt': Receipt,
+  'building': Building2,
+  'user-check': UserCheck,
+  'user-x': UserX,
+  'inbox': Inbox,
+};
+
 interface StatCardProps {
   title: string;
   value: string | number;
-  icon: LucideIcon;
+  icon: StatCardIcon;
   variant?: StatCardVariant;
   onClick?: () => void;
   className?: string;
@@ -33,13 +54,14 @@ interface StatCardProps {
 export function StatCard({
   title,
   value,
-  icon: Icon,
+  icon,
   variant = 'blue',
   onClick,
   className,
   trend,
 }: StatCardProps) {
   const styles = variantStyles[variant];
+  const Icon = iconMap[icon];
 
   return (
     <Card
