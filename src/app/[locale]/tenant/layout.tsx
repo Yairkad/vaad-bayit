@@ -48,9 +48,9 @@ export default function TenantLayout({
       .from('building_members')
       .select('buildings(name, address)')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { buildings: { name: string; address: string } | null } | null };
 
-    const building = membership?.buildings as { name: string; address: string } | null;
+    const building = membership?.buildings;
 
     setUserData({
       fullName: profile?.full_name || user.email || 'משתמש',

@@ -59,7 +59,7 @@ export default function TenantDashboardPage() {
       .from('building_members')
       .select('id, apartment_number, building_id, standing_order_active, buildings(name, address)')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { id: string; apartment_number: string; building_id: string; standing_order_active: boolean; buildings: { name: string; address: string } | null } | null };
 
     if (!membership) {
       setData({
