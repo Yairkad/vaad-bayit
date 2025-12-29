@@ -31,9 +31,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, User, Shield, Building2, Plus, Trash2, X } from 'lucide-react';
+import { Loader2, User, Building2, Plus, Trash2, X } from 'lucide-react';
 import type { Profile, Building, BuildingMember } from '@/types/database';
 
 type ProfileWithMembership = Profile & {
@@ -51,7 +50,6 @@ export default function AdminUsersPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Form state for editing user
-  const [isAdmin, setIsAdmin] = useState(false);
   const [newMembership, setNewMembership] = useState({
     building_id: '',
     apartment_number: '',
@@ -112,9 +110,9 @@ export default function AdminUsersPage() {
     // Get approved buildings for the dropdown
     const approvedBuildings = (allBuildingsData || []).filter((b: Building) => b.is_approved);
 
-    // Filter out current user from the list
+    // Filter out current user and admins from the list
     const filteredUsers = profilesWithMembers.filter(
-      u => u.id !== currentUser?.id
+      u => u.id !== currentUser?.id && u.role !== 'admin'
     ) as ProfileWithMembership[];
 
     setUsers(filteredUsers);
@@ -124,39 +122,8 @@ export default function AdminUsersPage() {
 
   const openUserDialog = (user: ProfileWithMembership) => {
     setSelectedUser(user);
-    setIsAdmin(user.role === 'admin');
     setNewMembership({ building_id: '', apartment_number: '', role: 'tenant' });
     setIsDialogOpen(true);
-  };
-
-  const handleToggleAdmin = async () => {
-    if (!selectedUser) return;
-
-    const newRole = !isAdmin ? 'admin' : 'tenant';
-    setIsSaving(true);
-
-    try {
-      const response = await fetch('/api/admin/update-role', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedUser.id, role: newRole }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'שגיאה בעדכון');
-      }
-
-      setIsAdmin(!isAdmin);
-      toast.success(newRole === 'admin' ? 'המשתמש הפך למנהל מערכת' : 'הרשאת מנהל הוסרה');
-      loadData();
-    } catch (error) {
-      console.error('Error updating role:', error);
-      toast.error(error instanceof Error ? error.message : 'שגיאה בעדכון');
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const handleAddMembership = async () => {
@@ -213,6 +180,31 @@ export default function AdminUsersPage() {
     setIsSaving(false);
   };
 
+  const handleUpdateMembershipRole = async (membershipId: string, newRole: 'committee' | 'tenant') => {
+    setIsSaving(true);
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from('building_members')
+      .update({ role: newRole })
+      .eq('id', membershipId);
+
+    if (error) {
+      toast.error('שגיאה בעדכון התפקיד');
+    } else {
+      toast.success('התפקיד עודכן בהצלחה');
+      await loadData();
+      // Refresh the selected user data
+      if (selectedUser) {
+        const updatedUser = users.find(u => u.id === selectedUser.id);
+        if (updatedUser) {
+          setSelectedUser(updatedUser);
+        }
+      }
+    }
+    setIsSaving(false);
+  };
+
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
 
@@ -242,15 +234,12 @@ export default function AdminUsersPage() {
 
   // Get display role for a user
   const getDisplayRole = (user: ProfileWithMembership) => {
-    if (user.role === 'admin') return 'admin';
     const hasCommitteeRole = user.building_members?.some(m => m.role === 'committee');
     return hasCommitteeRole ? 'committee' : 'tenant';
   };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'admin':
-        return <Badge className="bg-purple-600">מנהל מערכת</Badge>;
       case 'committee':
         return <Badge className="bg-blue-600">ועד</Badge>;
       default:
@@ -258,13 +247,10 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Filter non-admin users for "with building" stat
-  const nonAdminUsers = users.filter(u => u.role !== 'admin');
   const stats = {
     total: users.length,
-    admins: users.filter(u => u.role === 'admin').length,
-    withBuilding: nonAdminUsers.filter(u => u.building_members && u.building_members.length > 0).length,
-    withoutBuilding: nonAdminUsers.filter(u => !u.building_members || u.building_members.length === 0).length,
+    withBuilding: users.filter(u => u.building_members && u.building_members.length > 0).length,
+    withoutBuilding: users.filter(u => !u.building_members || u.building_members.length === 0).length,
   };
 
   if (isLoading) {
@@ -300,12 +286,12 @@ export default function AdminUsersPage() {
         <Card>
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1">
-              <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 shrink-0">
-                <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" />
+              <div className="p-1.5 sm:p-2 rounded-lg bg-orange-100 shrink-0">
+                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-600" />
               </div>
               <div className="min-w-0 flex-1 sm:w-full">
-                <p className="text-xs text-muted-foreground truncate">מנהלי מערכת</p>
-                <p className="text-lg sm:text-2xl font-bold">{stats.admins}</p>
+                <p className="text-xs text-muted-foreground truncate">לא משויכים</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.withoutBuilding}</p>
               </div>
             </div>
           </CardContent>
@@ -443,37 +429,39 @@ export default function AdminUsersPage() {
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {/* Admin Toggle */}
-            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-              <div>
-                <Label className="text-base font-medium">מנהל מערכת</Label>
-                <p className="text-sm text-muted-foreground">גישה מלאה לכל הבניינים והמשתמשים</p>
-              </div>
-              <Switch
-                checked={isAdmin}
-                onCheckedChange={handleToggleAdmin}
-                disabled={isSaving || selectedUser?.id === currentUserId}
-              />
-            </div>
-
             {/* Building Memberships */}
             <div className="space-y-3">
               <Label className="text-base font-medium">שיוכים לבניינים</Label>
 
               {selectedUser?.building_members?.map((membership) => (
-                <div key={membership.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <p className="font-medium">{membership.buildings?.address}</p>
+                <div key={membership.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{membership.buildings?.address}</p>
                     <p className="text-sm text-muted-foreground">
-                      דירה {membership.apartment_number} · {membership.role === 'committee' ? 'ועד בית' : 'דייר'}
+                      דירה {membership.apartment_number}
                     </p>
                   </div>
+                  <Select
+                    value={membership.role}
+                    onValueChange={(value: 'committee' | 'tenant') =>
+                      handleUpdateMembershipRole(membership.id, value)
+                    }
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tenant">דייר</SelectItem>
+                      <SelectItem value="committee">ועד</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => handleRemoveMembership(membership.id)}
                     disabled={isSaving}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
                   >
                     <X className="h-4 w-4" />
                   </Button>

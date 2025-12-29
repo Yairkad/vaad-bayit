@@ -3,15 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Key } from 'lucide-react';
+import { Loader2, User, Key, LogOut } from 'lucide-react';
 
 export default function SettingsPage() {
   const t = useTranslations();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -123,6 +125,13 @@ export default function SettingsPage() {
     }
   };
 
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -232,6 +241,23 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Logout Card */}
+      <Card className="border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-600">
+            <LogOut className="h-5 w-5" />
+            התנתקות
+          </CardTitle>
+          <CardDescription>התנתקות מהמערכת</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 ml-2" />
+            התנתק מהמערכת
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

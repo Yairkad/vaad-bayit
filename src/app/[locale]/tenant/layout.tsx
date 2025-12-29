@@ -46,16 +46,28 @@ export default function TenantLayout({
     // Get building membership
     const { data: membership } = await supabase
       .from('building_members')
-      .select('buildings(name, address)')
+      .select('role, buildings(name, address)')
       .eq('user_id', user.id)
-      .single() as { data: { buildings: { name: string; address: string } | null } | null };
+      .single() as { data: { role: string; buildings: { name: string; address: string } | null } | null };
+
+    // If user is admin, redirect to admin dashboard
+    if (profile?.role === 'admin') {
+      router.push('/admin');
+      return;
+    }
+
+    // If user is committee member, redirect to committee dashboard
+    if (membership?.role === 'committee') {
+      router.push('/dashboard');
+      return;
+    }
 
     const building = membership?.buildings;
 
     setUserData({
       fullName: profile?.full_name || user.email || 'משתמש',
       buildingName: building?.address || building?.name || null,
-      role: (profile?.role as 'admin' | 'committee' | 'tenant') || 'tenant',
+      role: 'tenant',
     });
 
     setIsLoading(false);

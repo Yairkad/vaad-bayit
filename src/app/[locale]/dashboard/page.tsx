@@ -1,25 +1,33 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, CreditCard, AlertTriangle, Receipt } from 'lucide-react';
+import { Link } from '@/i18n/navigation';
 import type { Building, BuildingMember, Expense } from '@/types/database';
-
-type MemberWithBuilding = BuildingMember & {
-  buildings: Building | null;
-};
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Get user's building
+  // Get user's building membership (separate queries to avoid 406)
   const { data: membership } = await supabase
     .from('building_members')
-    .select('building_id, buildings(*)')
+    .select('building_id')
     .eq('user_id', user?.id || '')
-    .single() as { data: MemberWithBuilding | null };
+    .single() as { data: { building_id: string } | null };
 
   const buildingId = membership?.building_id;
+
+  // Get building details separately
+  let building: Building | null = null;
+  if (buildingId) {
+    const { data: buildingData } = await supabase
+      .from('buildings')
+      .select('*')
+      .eq('id', buildingId)
+      .single() as { data: Building | null };
+    building = buildingData;
+  }
 
   // Get stats if building exists
   let stats = {
@@ -75,6 +83,7 @@ export default async function DashboardPage() {
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
+      href: '/dashboard/tenants',
     },
     {
       title: 'תשלומים שלא שולמו',
@@ -82,6 +91,7 @@ export default async function DashboardPage() {
       icon: CreditCard,
       color: 'text-red-600',
       bgColor: 'bg-red-100',
+      href: '/dashboard/payments',
     },
     {
       title: 'תקלות פתוחות',
@@ -89,6 +99,7 @@ export default async function DashboardPage() {
       icon: AlertTriangle,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
+      href: '/dashboard/issues',
     },
     {
       title: 'הוצאות החודש',
@@ -96,6 +107,7 @@ export default async function DashboardPage() {
       icon: Receipt,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
+      href: '/dashboard/expenses',
     },
   ];
 
@@ -104,26 +116,28 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold">לוח בקרה</h1>
         <p className="text-muted-foreground">
-          {membership?.buildings?.name || 'ברוכים הבאים למערכת ועד בית'}
+          {building?.name || 'ברוכים הבאים למערכת ועד בית'}
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {cards.map((card, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {card.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${card.bgColor}`}>
-                <card.icon className={`h-4 w-4 ${card.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
-            </CardContent>
-          </Card>
+          <Link key={index} href={card.href}>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {card.title}
+                </CardTitle>
+                <div className={`p-2 rounded-lg ${card.bgColor}`}>
+                  <card.icon className={`h-4 w-4 ${card.color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{card.value}</div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 

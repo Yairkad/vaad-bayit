@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, ArrowRight } from 'lucide-react';
+import { Loader2, User, ArrowLeft } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 
 export default function AdminProfilePage() {
@@ -101,7 +101,7 @@ export default function AdminProfilePage() {
           onClick={() => router.push('/admin')}
           className="shrink-0"
         >
-          <ArrowRight className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
           <h1 className="text-xl sm:text-3xl font-bold">פרופיל</h1>

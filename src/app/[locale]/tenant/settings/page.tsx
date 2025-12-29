@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Key, ArrowRight } from 'lucide-react';
+import { Loader2, User, Key, ArrowLeft, LogOut } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 
 export default function TenantSettingsPage() {
@@ -15,6 +15,7 @@ export default function TenantSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const [profile, setProfile] = useState({
     full_name: '',
@@ -36,6 +37,8 @@ export default function TenantSettingsPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return;
+
+    setUserEmail(user.email || '');
 
     const { data } = await supabase
       .from('profiles')
@@ -124,6 +127,13 @@ export default function TenantSettingsPage() {
     }
   };
 
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -141,7 +151,7 @@ export default function TenantSettingsPage() {
           onClick={() => router.push('/tenant')}
           className="shrink-0"
         >
-          <ArrowRight className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
           <h1 className="text-xl sm:text-3xl font-bold">הגדרות</h1>
@@ -160,6 +170,16 @@ export default function TenantSettingsPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">אימייל</Label>
+              <Input
+                id="email"
+                value={userEmail}
+                disabled
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground">לא ניתן לשנות את כתובת המייל</p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="full_name">שם מלא</Label>
               <Input
@@ -223,6 +243,23 @@ export default function TenantSettingsPage() {
               {isChangingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : 'שנה סיסמה'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Logout Card */}
+      <Card className="border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-600">
+            <LogOut className="h-5 w-5" />
+            התנתקות
+          </CardTitle>
+          <CardDescription>התנתקות מהמערכת</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 ml-2" />
+            התנתק מהמערכת
+          </Button>
         </CardContent>
       </Card>
     </div>
