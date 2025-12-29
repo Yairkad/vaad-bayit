@@ -31,7 +31,8 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
+    const profileData = profile as { role: string } | null;
+    if (profileData?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
     }
 

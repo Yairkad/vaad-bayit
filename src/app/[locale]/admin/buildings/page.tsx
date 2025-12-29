@@ -186,6 +186,8 @@ export default function AdminBuildingsPage() {
 
         if (error) throw error;
 
+        const buildingId = (newBuilding as Building).id;
+
         // Add committee member
         if (formData.create_new_user && formData.new_user_email && formData.new_user_name && formData.committee_apartment) {
           // Create new user via API
@@ -196,7 +198,7 @@ export default function AdminBuildingsPage() {
               email: formData.new_user_email,
               full_name: formData.new_user_name,
               phone: formData.new_user_phone || null,
-              building_id: newBuilding.id,
+              building_id: buildingId,
               apartment_number: formData.committee_apartment,
               role: 'committee',
             }),
@@ -216,11 +218,11 @@ export default function AdminBuildingsPage() {
         } else if (formData.committee_user_id && formData.committee_apartment) {
           // Add existing user
           const committeeUser = users.find(u => u.id === formData.committee_user_id);
-          if (committeeUser && newBuilding) {
+          if (committeeUser && buildingId) {
             const { error: memberError } = await supabase
               .from('building_members')
               .insert({
-                building_id: newBuilding.id,
+                building_id: buildingId,
                 user_id: formData.committee_user_id,
                 full_name: committeeUser.full_name,
                 apartment_number: formData.committee_apartment,
@@ -531,8 +533,8 @@ export default function AdminBuildingsPage() {
                   disabled={
                     isSaving ||
                     (!!formData.committee_user_id && !formData.committee_apartment) ||
-                    (formData.create_new_user && formData.new_user_email && !formData.committee_apartment) ||
-                    (formData.create_new_user && formData.new_user_email && !formData.new_user_name)
+                    !!(formData.create_new_user && formData.new_user_email && !formData.committee_apartment) ||
+                    !!(formData.create_new_user && formData.new_user_email && !formData.new_user_name)
                   }
                 >
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'שמור'}
