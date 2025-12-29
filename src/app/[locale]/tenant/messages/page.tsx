@@ -33,7 +33,7 @@ export default function TenantMessagesPage() {
       .from('building_members')
       .select('building_id')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { building_id: string } | null };
 
     if (!membership) {
       setIsLoading(false);

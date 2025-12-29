@@ -42,7 +42,7 @@ export default function TenantDocumentsPage() {
       .from('building_members')
       .select('id, building_id')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { id: string; building_id: string } | null };
 
     if (!membership) {
       setIsLoading(false);
