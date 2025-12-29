@@ -77,10 +77,24 @@ export default function AdminUsersPage() {
       setCurrentUserId(currentUser.id);
     }
 
+    // Get profiles with building members
     const { data: profilesData } = await supabase
       .from('profiles')
-      .select('*, building_members(*, buildings(*))')
+      .select('*')
       .order('created_at', { ascending: false });
+
+    // Get building members separately
+    const { data: membersData } = await supabase
+      .from('building_members')
+      .select('*, buildings(*)');
+
+    // Merge the data
+    const profiles = profilesData as Profile[] || [];
+    const members = membersData as (BuildingMember & { buildings: Building | null })[] || [];
+    const profilesWithMembers = profiles.map(profile => ({
+      ...profile,
+      building_members: members.filter(m => m.user_id === profile.id),
+    }));
 
     const { data: buildingsData } = await supabase
       .from('buildings')
@@ -88,10 +102,10 @@ export default function AdminUsersPage() {
       .eq('is_approved', true)
       .order('name');
 
-    // Filter out current user (super admin) from the list
-    const filteredUsers = (profilesData as ProfileWithMembership[])?.filter(
+    // Filter out current user from the list
+    const filteredUsers = profilesWithMembers.filter(
       u => u.id !== currentUser?.id
-    ) || [];
+    ) as ProfileWithMembership[];
 
     setUsers(filteredUsers);
     setBuildings(buildingsData || []);
@@ -246,10 +260,13 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Filter non-admin users for "with building" stat
+  const nonAdminUsers = users.filter(u => u.role !== 'admin');
   const stats = {
     total: users.length,
     admins: users.filter(u => u.role === 'admin').length,
-    withBuilding: users.filter(u => u.building_members && u.building_members.length > 0).length,
+    withBuilding: nonAdminUsers.filter(u => u.building_members && u.building_members.length > 0).length,
+    withoutBuilding: nonAdminUsers.filter(u => !u.building_members || u.building_members.length === 0).length,
   };
 
   if (isLoading) {

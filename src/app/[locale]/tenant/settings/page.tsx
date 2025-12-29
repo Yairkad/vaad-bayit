@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Key } from 'lucide-react';
+import { Loader2, User, Key, ArrowRight } from 'lucide-react';
+import { useRouter } from '@/i18n/navigation';
 
 export default function TenantSettingsPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -61,19 +63,27 @@ export default function TenantSettingsPage() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      const { error, data, count } = await supabase
         .from('profiles')
         .update({
           full_name: profile.full_name,
           phone: profile.phone || null,
         } as never)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
+
+      console.log('Update result:', { error, data, count, userId: user.id });
 
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        toast.error('לא ניתן לעדכן - בדוק הרשאות');
+        return;
+      }
+
       toast.success('הפרופיל עודכן בהצלחה');
     } catch (error) {
-      console.error(error);
+      console.error('Profile update error:', error);
       toast.error('שגיאה בעדכון הפרופיל');
     } finally {
       setIsSaving(false);
@@ -124,9 +134,19 @@ export default function TenantSettingsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-3xl font-bold">הגדרות</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">ניהול הפרופיל והחשבון שלך</p>
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push('/tenant')}
+          className="shrink-0"
+        >
+          <ArrowRight className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-xl sm:text-3xl font-bold">הגדרות</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">ניהול הפרופיל והחשבון שלך</p>
+        </div>
       </div>
 
       {/* Profile Settings */}
