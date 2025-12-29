@@ -147,6 +147,7 @@ export default function PaymentsPage() {
     const paidDate = payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('he-IL') : new Date().toLocaleDateString('he-IL');
     const monthDate = new Date(payment.month);
     const monthName = monthDate.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+    const addressWithCity = [building?.address, building?.city].filter(Boolean).join(', ');
 
     // Create receipt content
     const receiptContent = `
@@ -154,95 +155,190 @@ export default function PaymentsPage() {
       <html dir="rtl" lang="he">
       <head>
         <meta charset="UTF-8">
-        <title>אישור תשלום</title>
+        <title>אישור תשלום ועד בית</title>
         <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
           body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
             padding: 40px;
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
+            background: #f8fafc;
+            min-height: 100vh;
+          }
+          .receipt {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            overflow: hidden;
           }
           .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 32px;
             text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
           }
           .header h1 {
-            margin: 0;
-            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
           }
-          .header p {
-            margin: 5px 0;
-            color: #666;
+          .header .address {
+            font-size: 16px;
+            opacity: 0.9;
           }
           .content {
-            line-height: 1.8;
+            padding: 32px;
           }
-          .field {
-            margin: 15px 0;
-          }
-          .field-label {
-            font-weight: bold;
-            color: #555;
-          }
-          .amount {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2563eb;
+          .amount-box {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 24px;
             text-align: center;
-            padding: 20px;
-            background: #f0f9ff;
+            margin-bottom: 28px;
+          }
+          .amount-label {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+          }
+          .amount-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1d4ed8;
+          }
+          .details {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .detail-row:last-child {
+            border-bottom: none;
+          }
+          .detail-label {
+            color: #64748b;
+            font-size: 14px;
+          }
+          .detail-value {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+          }
+          .disclaimer {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
             border-radius: 8px;
-            margin: 20px 0;
+            padding: 16px;
+            margin-bottom: 24px;
+          }
+          .disclaimer-title {
+            font-weight: 600;
+            color: #92400e;
+            font-size: 13px;
+            margin-bottom: 4px;
+          }
+          .disclaimer-text {
+            color: #a16207;
+            font-size: 12px;
+            line-height: 1.5;
           }
           .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
             text-align: center;
-            color: #888;
-            font-size: 12px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+          }
+          .footer-text {
+            color: #94a3b8;
+            font-size: 11px;
+            line-height: 1.6;
+          }
+          .checkmark {
+            width: 48px;
+            height: 48px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+          }
+          .checkmark::after {
+            content: '✓';
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
           }
           @media print {
-            body { padding: 20px; }
+            body {
+              padding: 0;
+              background: white;
+            }
+            .receipt {
+              box-shadow: none;
+            }
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <h1>אישור תשלום</h1>
-          <p>${building?.name || ''}</p>
-          <p>${building?.address || ''}</p>
-        </div>
-        <div class="content">
-          <div class="field">
-            <span class="field-label">שם הדייר:</span>
-            <span>${member?.full_name || ''}</span>
+        <div class="receipt">
+          <div class="header">
+            <h1>אישור תשלום ועד בית</h1>
+            <div class="address">${addressWithCity}</div>
           </div>
-          <div class="field">
-            <span class="field-label">דירה:</span>
-            <span>${member?.apartment_number || ''}</span>
+          <div class="content">
+            <div class="checkmark"></div>
+            <div class="amount-box">
+              <div class="amount-label">סכום ששולם</div>
+              <div class="amount-value">₪${Number(payment.amount).toLocaleString()}</div>
+            </div>
+            <div class="details">
+              <div class="detail-row">
+                <span class="detail-label">שם הדייר</span>
+                <span class="detail-value">${member?.full_name || ''}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">מספר דירה</span>
+                <span class="detail-value">${member?.apartment_number || ''}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">עבור חודש</span>
+                <span class="detail-value">${monthName}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">תאריך תשלום</span>
+                <span class="detail-value">${paidDate}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">אמצעי תשלום</span>
+                <span class="detail-value">${payment.payment_method === 'standing_order' ? 'הוראת קבע' : 'מזומן'}</span>
+              </div>
+            </div>
+            <div class="disclaimer">
+              <div class="disclaimer-title">שימו לב</div>
+              <div class="disclaimer-text">
+                מסמך זה מהווה אישור פנימי בלבד לצורכי תיעוד ועד הבית.
+                אין להתייחס למסמך זה כחשבונית מס, קבלה רשמית או כל מסמך בעל תוקף חשבונאי או משפטי.
+              </div>
+            </div>
+            <div class="footer">
+              <div class="footer-text">
+                אישור זה הופק אוטומטית ע"י מערכת ועד בית<br>
+                תאריך הפקה: ${new Date().toLocaleDateString('he-IL')} בשעה ${new Date().toLocaleTimeString('he-IL')}
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <span class="field-label">עבור חודש:</span>
-            <span>${monthName}</span>
-          </div>
-          <div class="field">
-            <span class="field-label">תאריך תשלום:</span>
-            <span>${paidDate}</span>
-          </div>
-          <div class="field">
-            <span class="field-label">אמצעי תשלום:</span>
-            <span>${payment.payment_method === 'standing_order' ? 'הוראת קבע' : 'מזומן'}</span>
-          </div>
-          <div class="amount">
-            סכום ששולם: ₪${Number(payment.amount).toLocaleString()}
-          </div>
-        </div>
-        <div class="footer">
-          <p>אישור זה הופק אוטומטית ע"י מערכת ועד בית</p>
-          <p>תאריך הפקה: ${new Date().toLocaleDateString('he-IL')} ${new Date().toLocaleTimeString('he-IL')}</p>
         </div>
       </body>
       </html>
