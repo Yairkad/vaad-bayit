@@ -45,7 +45,7 @@ export default function TenantMessagesPage() {
       .from('messages')
       .select('*')
       .eq('building_id', membership.building_id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as { data: Message[] | null };
 
     // Filter out expired messages
     const activeMessages = (data || []).filter((msg: Message) => {

@@ -47,7 +47,7 @@ export default function TenantPaymentsPage() {
       .from('payments')
       .select('*')
       .eq('member_id', membership.id)
-      .order('month', { ascending: false });
+      .order('month', { ascending: false }) as { data: Payment[] | null };
 
     setPayments(data || []);
     setIsLoading(false);

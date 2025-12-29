@@ -55,7 +55,7 @@ export default function TenantDocumentsPage() {
       .select('*')
       .eq('building_id', membership.building_id)
       .or(`member_id.is.null,member_id.eq.${membership.id}`)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as { data: Document[] | null };
 
     setDocuments(data || []);
     setIsLoading(false);

@@ -81,7 +81,7 @@ export default function TenantIssuesPage() {
       .from('issues')
       .select('*')
       .eq('reported_by', membership.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as { data: Issue[] | null };
 
     setIssues(data || []);
     setIsLoading(false);

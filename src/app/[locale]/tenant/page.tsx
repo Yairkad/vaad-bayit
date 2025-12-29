@@ -86,14 +86,14 @@ export default function TenantDashboardPage() {
       .eq('is_paid', true)
       .order('paid_at', { ascending: false })
       .limit(1)
-      .single();
+      .single() as { data: LastPayment | null };
 
     // Get unpaid payments
     const { data: unpaidPayments } = await supabase
       .from('payments')
       .select('amount')
       .eq('member_id', membership.id)
-      .eq('is_paid', false);
+      .eq('is_paid', false) as { data: { amount: number }[] | null };
 
     // Get my open issues
     const { data: myIssues } = await supabase
@@ -102,7 +102,7 @@ export default function TenantDashboardPage() {
       .eq('reported_by', membership.id)
       .neq('status', 'closed')
       .order('created_at', { ascending: false })
-      .limit(3);
+      .limit(3) as { data: Issue[] | null };
 
     // Get recent messages (last 5)
     const { data: messages } = await supabase
@@ -110,7 +110,7 @@ export default function TenantDashboardPage() {
       .select('id, title, created_at, expires_at')
       .eq('building_id', membership.building_id)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(5) as { data: Message[] | null };
 
     // Filter out expired messages
     const activeMessages = (messages || []).filter((msg: Message) => {

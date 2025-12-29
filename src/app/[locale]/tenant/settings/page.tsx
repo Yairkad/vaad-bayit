@@ -39,7 +39,7 @@ export default function TenantSettingsPage() {
       .from('profiles')
       .select('full_name, phone')
       .eq('id', user.id)
-      .single();
+      .single() as { data: { full_name: string | null; phone: string | null } | null };
 
     if (data) {
       setProfile({
