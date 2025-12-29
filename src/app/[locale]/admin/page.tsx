@@ -1,81 +1,144 @@
-import { createClient } from '@/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, CheckCircle, Clock } from 'lucide-react';
+'use client';
 
-export default async function AdminDashboardPage() {
-  const supabase = await createClient();
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { Card, CardContent } from '@/components/ui/card';
+import { Building2, Users, CheckCircle, Clock, Shield, UserCheck } from 'lucide-react';
+import { useRouter } from '@/i18n/navigation';
+import { Loader2 } from 'lucide-react';
 
-  // Get stats
-  const { count: totalBuildings } = await supabase
-    .from('buildings')
-    .select('*', { count: 'exact', head: true });
+interface Stats {
+  totalBuildings: number;
+  approvedBuildings: number;
+  pendingBuildings: number;
+  totalUsers: number;
+  adminUsers: number;
+  usersWithBuilding: number;
+}
 
-  const { count: approvedBuildings } = await supabase
-    .from('buildings')
-    .select('*', { count: 'exact', head: true })
-    .eq('is_approved', true);
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
-  const { count: pendingBuildings } = await supabase
-    .from('buildings')
-    .select('*', { count: 'exact', head: true })
-    .eq('is_approved', false);
+  useEffect(() => {
+    loadStats();
+  }, []);
 
-  const { count: totalUsers } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true });
+  const loadStats = async () => {
+    const supabase = createClient();
+
+    const [
+      { count: totalBuildings },
+      { count: approvedBuildings },
+      { count: pendingBuildings },
+      { count: totalUsers },
+      { count: adminUsers },
+      { count: usersWithBuilding },
+    ] = await Promise.all([
+      supabase.from('buildings').select('*', { count: 'exact', head: true }),
+      supabase.from('buildings').select('*', { count: 'exact', head: true }).eq('is_approved', true),
+      supabase.from('buildings').select('*', { count: 'exact', head: true }).eq('is_approved', false),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
+      supabase.from('building_members').select('user_id', { count: 'exact', head: true }).not('user_id', 'is', null),
+    ]);
+
+    setStats({
+      totalBuildings: totalBuildings || 0,
+      approvedBuildings: approvedBuildings || 0,
+      pendingBuildings: pendingBuildings || 0,
+      totalUsers: totalUsers || 0,
+      adminUsers: adminUsers || 0,
+      usersWithBuilding: usersWithBuilding || 0,
+    });
+    setIsLoading(false);
+  };
 
   const cards = [
     {
       title: 'סה״כ בניינים',
-      value: totalBuildings || 0,
+      value: stats?.totalBuildings || 0,
       icon: Building2,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
+      href: '/admin/buildings',
     },
     {
       title: 'בניינים מאושרים',
-      value: approvedBuildings || 0,
+      value: stats?.approvedBuildings || 0,
       icon: CheckCircle,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
+      href: '/admin/buildings',
     },
     {
       title: 'ממתינים לאישור',
-      value: pendingBuildings || 0,
+      value: stats?.pendingBuildings || 0,
       icon: Clock,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
+      href: '/admin/buildings',
     },
     {
-      title: 'משתמשים רשומים',
-      value: totalUsers || 0,
+      title: 'סה״כ משתמשים',
+      value: stats?.totalUsers || 0,
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
+      href: '/admin/users',
+    },
+    {
+      title: 'מנהלי מערכת',
+      value: stats?.adminUsers || 0,
+      icon: Shield,
+      color: 'text-red-600',
+      bgColor: 'bg-red-100',
+      href: '/admin/users',
+    },
+    {
+      title: 'משויכים לבניין',
+      value: stats?.usersWithBuilding || 0,
+      icon: UserCheck,
+      color: 'text-teal-600',
+      bgColor: 'bg-teal-100',
+      href: '/admin/buildings',
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">לוח בקרה - מנהל מערכת</h1>
-        <p className="text-muted-foreground">ניהול כללי של המערכת</p>
+        <h1 className="text-xl sm:text-3xl font-bold">לוח בקרה - מנהל מערכת</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">ניהול כללי של המערכת</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Grid - Compact on mobile */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
         {cards.map((card, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {card.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${card.bgColor}`}>
-                <card.icon className={`h-4 w-4 ${card.color}`} />
+          <Card
+            key={index}
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push(card.href)}
+          >
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1">
+                <div className={`p-1.5 sm:p-2 rounded-lg ${card.bgColor} shrink-0`}>
+                  <card.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${card.color}`} />
+                </div>
+                <div className="min-w-0 flex-1 sm:w-full">
+                  <p className="text-xs text-muted-foreground truncate">{card.title}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{card.value}</p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
             </CardContent>
           </Card>
         ))}
