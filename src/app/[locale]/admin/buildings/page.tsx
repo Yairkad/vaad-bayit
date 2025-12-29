@@ -54,12 +54,22 @@ export default function AdminBuildingsPage() {
   const [formData, setFormData] = useState({
     address: '',
     city: '',
+    committee_user_id: '',
+    committee_apartment: '',
+    // For creating new committee user
+    create_new_user: false,
+    new_user_name: '',
+    new_user_email: '',
+    new_user_phone: '',
   });
 
   const [userFormData, setUserFormData] = useState({
-    user_id: '',
+    full_name: '',
+    email: '',
+    phone: '',
+    phone2: '',
     apartment_number: '',
-    role: 'committee' as 'committee' | 'tenant',
+    role: 'tenant' as 'committee' | 'tenant',
   });
 
   useEffect(() => {
@@ -98,12 +108,21 @@ export default function AdminBuildingsPage() {
   };
 
   const resetForm = () => {
-    setFormData({ address: '', city: '' });
+    setFormData({
+      address: '',
+      city: '',
+      committee_user_id: '',
+      committee_apartment: '',
+      create_new_user: false,
+      new_user_name: '',
+      new_user_email: '',
+      new_user_phone: '',
+    });
     setEditingBuilding(null);
   };
 
   const resetUserForm = () => {
-    setUserFormData({ user_id: '', apartment_number: '', role: 'committee' });
+    setUserFormData({ full_name: '', email: '', phone: '', phone2: '', apartment_number: '', role: 'tenant' });
     setSelectedBuilding(null);
   };
 
@@ -112,6 +131,12 @@ export default function AdminBuildingsPage() {
     setFormData({
       address: building.address,
       city: building.city || '',
+      committee_user_id: '',
+      committee_apartment: '',
+      create_new_user: false,
+      new_user_name: '',
+      new_user_email: '',
+      new_user_phone: '',
     });
     setIsDialogOpen(true);
   };
@@ -153,12 +178,66 @@ export default function AdminBuildingsPage() {
           created_by: user?.id,
         };
 
-        const { error } = await supabase
+        const { data: newBuilding, error } = await supabase
           .from('buildings')
-          .insert(buildingData as never);
+          .insert(buildingData as never)
+          .select()
+          .single();
 
         if (error) throw error;
-        toast.success('הבניין נוסף בהצלחה');
+
+        // Add committee member
+        if (formData.create_new_user && formData.new_user_email && formData.new_user_name && formData.committee_apartment) {
+          // Create new user via API
+          const response = await fetch('/api/admin/create-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: formData.new_user_email,
+              full_name: formData.new_user_name,
+              phone: formData.new_user_phone || null,
+              building_id: newBuilding.id,
+              apartment_number: formData.committee_apartment,
+              role: 'committee',
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            console.error('Error creating user:', result.error);
+            toast.error('הבניין נוסף אך הייתה שגיאה ביצירת הוועד: ' + result.error);
+          } else {
+            toast.success(result.isNewUser
+              ? 'הבניין נוסף בהצלחה! נשלח מייל לוועד להגדרת סיסמה'
+              : 'הבניין נוסף והוועד שויך בהצלחה'
+            );
+          }
+        } else if (formData.committee_user_id && formData.committee_apartment) {
+          // Add existing user
+          const committeeUser = users.find(u => u.id === formData.committee_user_id);
+          if (committeeUser && newBuilding) {
+            const { error: memberError } = await supabase
+              .from('building_members')
+              .insert({
+                building_id: newBuilding.id,
+                user_id: formData.committee_user_id,
+                full_name: committeeUser.full_name,
+                apartment_number: formData.committee_apartment,
+                role: 'committee',
+                phone: committeeUser.phone,
+              } as never);
+
+            if (memberError) {
+              console.error('Error adding committee member:', memberError);
+              toast.error('הבניין נוסף אך הייתה שגיאה בהוספת הוועד');
+            } else {
+              toast.success('הבניין והוועד נוספו בהצלחה');
+            }
+          }
+        } else {
+          toast.success('הבניין נוסף בהצלחה');
+        }
       }
 
       setIsDialogOpen(false);
@@ -177,40 +256,54 @@ export default function AdminBuildingsPage() {
     if (!selectedBuilding) return;
 
     setIsSaving(true);
-    const supabase = createClient();
 
     try {
-      // Get user details
-      const selectedUser = users.find(u => u.id === userFormData.user_id);
-      if (!selectedUser) throw new Error('משתמש לא נמצא');
+      if (userFormData.email) {
+        // Create new user via API (with email - will send password reset)
+        const response = await fetch('/api/admin/create-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: userFormData.email,
+            full_name: userFormData.full_name,
+            phone: userFormData.phone || null,
+            phone2: userFormData.phone2 || null,
+            building_id: selectedBuilding.id,
+            apartment_number: userFormData.apartment_number,
+            role: userFormData.role,
+          }),
+        });
 
-      // Check if user already has membership in this building
-      const { data: existingMember } = await supabase
-        .from('building_members')
-        .select('id')
-        .eq('building_id', selectedBuilding.id)
-        .eq('user_id', userFormData.user_id)
-        .single();
+        const result = await response.json();
 
-      if (existingMember) {
-        toast.error('המשתמש כבר משויך לבניין זה');
-        return;
+        if (!response.ok) {
+          toast.error('שגיאה: ' + result.error);
+          return;
+        }
+
+        toast.success(result.isNewUser
+          ? 'המשתמש נוסף בהצלחה! נשלח מייל להגדרת סיסמה'
+          : 'המשתמש שויך לבניין בהצלחה'
+        );
+      } else {
+        // Add as managed tenant (no login - managed by committee)
+        const supabase = createClient();
+        const { error } = await supabase
+          .from('building_members')
+          .insert({
+            building_id: selectedBuilding.id,
+            user_id: null, // No user account - managed tenant
+            full_name: userFormData.full_name,
+            apartment_number: userFormData.apartment_number,
+            role: userFormData.role,
+            phone: userFormData.phone || null,
+            phone2: userFormData.phone2 || null,
+          } as never);
+
+        if (error) throw error;
+        toast.success('הדייר נוסף בהצלחה (ללא חשבון משתמש)');
       }
 
-      const { error } = await supabase
-        .from('building_members')
-        .insert({
-          building_id: selectedBuilding.id,
-          user_id: userFormData.user_id,
-          full_name: selectedUser.full_name,
-          apartment_number: userFormData.apartment_number,
-          role: userFormData.role,
-          phone: selectedUser.phone,
-        } as never);
-
-      if (error) throw error;
-
-      toast.success('המשתמש נוסף לבניין בהצלחה');
       setIsUserDialogOpen(false);
       resetUserForm();
       loadData();
@@ -325,12 +418,123 @@ export default function AdminBuildingsPage() {
                     placeholder="לדוגמה: תל אביב"
                   />
                 </div>
+
+                {/* Committee member selection - only for new buildings */}
+                {!editingBuilding && (
+                  <>
+                    <div className="border-t pt-4">
+                      <Label className="text-base font-medium">ועד בית (אופציונלי)</Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        הוועד יוכל לנהל את הבניין ולהוסיף דיירים
+                      </p>
+                    </div>
+
+                    {/* Toggle between existing user and new user */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={!formData.create_new_user ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, create_new_user: false, new_user_name: '', new_user_email: '', new_user_phone: '' })}
+                      >
+                        משתמש קיים
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={formData.create_new_user ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, create_new_user: true, committee_user_id: '' })}
+                      >
+                        משתמש חדש
+                      </Button>
+                    </div>
+
+                    {!formData.create_new_user ? (
+                      // Existing user selection
+                      <div className="space-y-2">
+                        <Label>משתמש</Label>
+                        <Select
+                          value={formData.committee_user_id}
+                          onValueChange={(value) => setFormData({ ...formData, committee_user_id: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="בחר משתמש לוועד..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {users.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.full_name} {user.phone ? `(${user.phone})` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      // New user form
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="new_user_name">שם מלא *</Label>
+                          <Input
+                            id="new_user_name"
+                            value={formData.new_user_name}
+                            onChange={(e) => setFormData({ ...formData, new_user_name: e.target.value })}
+                            placeholder="ישראל ישראלי"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="new_user_email">אימייל *</Label>
+                          <Input
+                            id="new_user_email"
+                            type="email"
+                            value={formData.new_user_email}
+                            onChange={(e) => setFormData({ ...formData, new_user_email: e.target.value })}
+                            placeholder="example@email.com"
+                            dir="ltr"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            יישלח מייל להגדרת סיסמה
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="new_user_phone">טלפון</Label>
+                          <Input
+                            id="new_user_phone"
+                            value={formData.new_user_phone}
+                            onChange={(e) => setFormData({ ...formData, new_user_phone: e.target.value })}
+                            placeholder="050-1234567"
+                            dir="ltr"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {(formData.committee_user_id || (formData.create_new_user && formData.new_user_email)) && (
+                      <div className="space-y-2">
+                        <Label htmlFor="committee_apartment">מספר דירה של הוועד *</Label>
+                        <Input
+                          id="committee_apartment"
+                          value={formData.committee_apartment}
+                          onChange={(e) => setFormData({ ...formData, committee_apartment: e.target.value })}
+                          placeholder="לדוגמה: 1"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   ביטול
                 </Button>
-                <Button type="submit" disabled={isSaving}>
+                <Button
+                  type="submit"
+                  disabled={
+                    isSaving ||
+                    (!!formData.committee_user_id && !formData.committee_apartment) ||
+                    (formData.create_new_user && formData.new_user_email && !formData.committee_apartment) ||
+                    (formData.create_new_user && formData.new_user_email && !formData.new_user_name)
+                  }
+                >
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'שמור'}
                 </Button>
               </DialogFooter>
@@ -346,7 +550,7 @@ export default function AdminBuildingsPage() {
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>הוספת משתמש לבניין</DialogTitle>
+            <DialogTitle>הוספת דייר/משתמש לבניין</DialogTitle>
             <DialogDescription>
               {selectedBuilding?.address}
             </DialogDescription>
@@ -354,29 +558,21 @@ export default function AdminBuildingsPage() {
           <form onSubmit={handleAddUser}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>משתמש *</Label>
-                <Select
-                  value={userFormData.user_id}
-                  onValueChange={(value) => setUserFormData({ ...userFormData, user_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="בחר משתמש..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.full_name} {user.phone ? `(${user.phone})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="user_full_name">שם מלא *</Label>
+                <Input
+                  id="user_full_name"
+                  value={userFormData.full_name}
+                  onChange={(e) => setUserFormData({ ...userFormData, full_name: e.target.value })}
+                  placeholder="ישראל ישראלי"
+                  required
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="apartment">מספר דירה *</Label>
+                  <Label htmlFor="user_apartment">מספר דירה *</Label>
                   <Input
-                    id="apartment"
+                    id="user_apartment"
                     value={userFormData.apartment_number}
                     onChange={(e) => setUserFormData({ ...userFormData, apartment_number: e.target.value })}
                     placeholder="לדוגמה: 5"
@@ -393,18 +589,58 @@ export default function AdminBuildingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="committee">ועד בית</SelectItem>
                       <SelectItem value="tenant">דייר</SelectItem>
+                      <SelectItem value="committee">ועד בית</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="user_phone">טלפון 1</Label>
+                  <Input
+                    id="user_phone"
+                    value={userFormData.phone}
+                    onChange={(e) => setUserFormData({ ...userFormData, phone: e.target.value })}
+                    placeholder="050-1234567"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="user_phone2">טלפון 2</Label>
+                  <Input
+                    id="user_phone2"
+                    value={userFormData.phone2}
+                    onChange={(e) => setUserFormData({ ...userFormData, phone2: e.target.value })}
+                    placeholder="050-7654321"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="user_email">אימייל (אופציונלי)</Label>
+                <Input
+                  id="user_email"
+                  type="email"
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                  placeholder="example@email.com"
+                  dir="ltr"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {userFormData.email
+                    ? 'יישלח מייל להגדרת סיסמה - המשתמש יוכל להתחבר למערכת'
+                    : 'ללא אימייל - דייר מנוהל (לא יוכל להתחבר למערכת)'}
+                </p>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsUserDialogOpen(false)}>
                 ביטול
               </Button>
-              <Button type="submit" disabled={isSaving || !userFormData.user_id}>
+              <Button type="submit" disabled={isSaving || !userFormData.full_name || !userFormData.apartment_number}>
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'הוסף'}
               </Button>
             </DialogFooter>

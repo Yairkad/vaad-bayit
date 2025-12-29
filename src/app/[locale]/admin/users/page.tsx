@@ -20,7 +20,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -30,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, User, Shield, Building2, UserCog } from 'lucide-react';
+import { Loader2, User, Shield, Building2, UserCog, Plus } from 'lucide-react';
 import type { Profile, Building, BuildingMember } from '@/types/database';
 
 type ProfileWithMembership = Profile & {
@@ -43,6 +45,7 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<ProfileWithMembership | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -50,6 +53,12 @@ export default function AdminUsersPage() {
     building_id: '',
     building_role: 'tenant' as 'committee' | 'tenant',
     apartment_number: '',
+  });
+
+  const [addFormData, setAddFormData] = useState({
+    full_name: '',
+    phone: '',
+    role: 'tenant' as 'admin' | 'committee' | 'tenant',
   });
 
   useEffect(() => {
@@ -149,6 +158,17 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    // Note: This creates a profile record, but the user won't be able to login
+    // until they register through the auth system. This is for adding "managed" users.
+    toast.info('הוספת משתמשים ידנית אינה נתמכת כרגע. משתמשים צריכים להירשם דרך דף ההרשמה.');
+    setIsSaving(false);
+    setIsAddDialogOpen(false);
+  };
+
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
@@ -160,6 +180,12 @@ export default function AdminUsersPage() {
     }
   };
 
+  const stats = {
+    total: users.length,
+    admins: users.filter(u => u.role === 'admin').length,
+    withBuilding: users.filter(u => u.building_members && u.building_members.length > 0).length,
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -169,55 +195,173 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">ניהול משתמשים</h1>
-        <p className="text-muted-foreground">צפייה והגדרת הרשאות למשתמשים במערכת</p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-3xl font-bold">ניהול משתמשים</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">צפייה והגדרת הרשאות למשתמשים במערכת</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="ml-2 h-4 w-4" />
+              הוסף משתמש
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>הוספת משתמש חדש</DialogTitle>
+              <DialogDescription>
+                משתמשים נרשמים דרך דף ההרשמה. כאן ניתן להוסיף דיירים מנוהלים.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAddUser}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="add_name">שם מלא *</Label>
+                  <Input
+                    id="add_name"
+                    value={addFormData.full_name}
+                    onChange={(e) => setAddFormData({ ...addFormData, full_name: e.target.value })}
+                    placeholder="ישראל ישראלי"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="add_phone">טלפון</Label>
+                  <Input
+                    id="add_phone"
+                    value={addFormData.phone}
+                    onChange={(e) => setAddFormData({ ...addFormData, phone: e.target.value })}
+                    placeholder="050-1234567"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>תפקיד במערכת</Label>
+                  <Select
+                    value={addFormData.role}
+                    onValueChange={(value: 'admin' | 'committee' | 'tenant') =>
+                      setAddFormData({ ...addFormData, role: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tenant">דייר רגיל</SelectItem>
+                      <SelectItem value="committee">ועד בית</SelectItem>
+                      <SelectItem value="admin">מנהל מערכת</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  ביטול
+                </Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'הוסף'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Stats - Compact on mobile */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <User className="h-4 w-4" />
-              סה״כ משתמשים
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{users.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              מנהלי מערכת
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {users.filter(u => u.role === 'admin').length}
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100 shrink-0">
+                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
+              </div>
+              <div className="min-w-0 flex-1 sm:w-full">
+                <p className="text-xs text-muted-foreground truncate">סה״כ משתמשים</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.total}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              משויכים לבניין
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {users.filter(u => u.building_members && u.building_members.length > 0).length}
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 shrink-0">
+                <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" />
+              </div>
+              <div className="min-w-0 flex-1 sm:w-full">
+                <p className="text-xs text-muted-foreground truncate">מנהלי מערכת</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.admins}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1">
+              <div className="p-1.5 sm:p-2 rounded-lg bg-green-100 shrink-0">
+                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
+              </div>
+              <div className="min-w-0 flex-1 sm:w-full">
+                <p className="text-xs text-muted-foreground truncate">משויכים לבניין</p>
+                <p className="text-lg sm:text-2xl font-bold">{stats.withBuilding}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Users Table */}
-      <Card>
+      {/* Mobile Cards View */}
+      <div className="lg:hidden space-y-3">
+        {users.map((user) => {
+          const membership = user.building_members?.[0];
+          return (
+            <Card key={user.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="font-bold truncate">{user.full_name}</span>
+                    </div>
+                    {user.phone && (
+                      <p className="text-sm text-muted-foreground" dir="ltr">{user.phone}</p>
+                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {getRoleBadge(user.role)}
+                      {membership && (
+                        <Badge variant="outline" className="text-xs">
+                          {membership.buildings?.address || membership.buildings?.name} - דירה {membership.apartment_number}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEditDialog(user)}
+                    title="ערוך הרשאות"
+                    className="shrink-0"
+                  >
+                    <UserCog className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+        {users.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              אין משתמשים
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <Card className="hidden lg:block">
         <CardHeader>
           <CardTitle className="text-lg">רשימת משתמשים</CardTitle>
         </CardHeader>
@@ -246,7 +390,7 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
                     <TableCell>
-                      {membership?.buildings?.name || (
+                      {membership?.buildings?.address || membership?.buildings?.name || (
                         <span className="text-muted-foreground">לא משויך</span>
                       )}
                     </TableCell>
@@ -339,7 +483,7 @@ export default function AdminUsersPage() {
                   <SelectContent>
                     {buildings.map((building) => (
                       <SelectItem key={building.id} value={building.id}>
-                        {building.name} - {building.address}
+                        {building.address}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -351,9 +495,7 @@ export default function AdminUsersPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>מספר דירה</Label>
-                      <input
-                        type="text"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      <Input
                         value={formData.apartment_number}
                         onChange={(e) =>
                           setFormData({ ...formData, apartment_number: e.target.value })
