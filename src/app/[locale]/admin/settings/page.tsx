@@ -8,21 +8,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Building2, Phone, Mail } from 'lucide-react';
-import type { Profile, BuildingMember, Building } from '@/types/database';
-
-type MemberWithBuilding = BuildingMember & { buildings: Building | null };
+import { Loader2, User, Key } from 'lucide-react';
 
 export default function SettingsPage() {
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [membership, setMembership] = useState<MemberWithBuilding | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
-  const [formData, setFormData] = useState({
+  const [profileData, setProfileData] = useState({
     full_name: '',
     phone: '',
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    newPassword: '',
+    confirmPassword: '',
   });
 
   useEffect(() => {
@@ -35,68 +37,89 @@ export default function SettingsPage() {
 
     if (!user) return;
 
-    // Load profile
-    const { data: profileData } = await supabase
+    setUserEmail(user.email || '');
+
+    const { data } = await supabase
       .from('profiles')
-      .select('*')
+      .select('full_name, phone')
       .eq('id', user.id)
-      .single() as { data: Profile | null };
+      .single() as { data: { full_name: string | null; phone: string | null } | null };
 
-    if (profileData) {
-      setProfile(profileData);
-      setFormData({
-        full_name: profileData.full_name || '',
-        phone: profileData.phone || '',
+    if (data) {
+      setProfileData({
+        full_name: data.full_name || '',
+        phone: data.phone || '',
       });
-    }
-
-    // Load building membership
-    const { data: membershipData } = await supabase
-      .from('building_members')
-      .select('*, buildings(*)')
-      .eq('user_id', user.id)
-      .single() as { data: MemberWithBuilding | null };
-
-    if (membershipData) {
-      setMembership(membershipData);
     }
 
     setIsLoading(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
-
     setIsSaving(true);
+
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return;
 
     try {
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('profiles')
         .update({
-          full_name: formData.full_name,
-          phone: formData.phone || null,
+          full_name: profileData.full_name,
+          phone: profileData.phone || null,
         } as never)
-        .eq('id', profile.id);
+        .eq('id', user.id)
+        .select();
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.error('לא ניתן לעדכן - בדוק הרשאות');
+        return;
+      }
+
       toast.success('הפרופיל עודכן בהצלחה');
-      loadData();
     } catch (error) {
-      console.error(error);
+      console.error('Profile update error:', error);
       toast.error('שגיאה בעדכון הפרופיל');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin': return 'מנהל מערכת';
-      case 'committee': return 'ועד בית';
-      case 'tenant': return 'דייר';
-      default: return role;
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('הסיסמאות לא תואמות');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('הסיסמה חייבת להכיל לפחות 6 תווים');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    const supabase = createClient();
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (error) throw error;
+
+      toast.success('הסיסמה שונתה בהצלחה');
+      setPasswordData({ newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      console.error(error);
+      toast.error('שגיאה בשינוי הסיסמה');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -123,118 +146,89 @@ export default function SettingsPage() {
               <User className="h-5 w-5" />
               פרטים אישיים
             </CardTitle>
-            <CardDescription>עדכון פרטי הפרופיל שלך</CardDescription>
+            <CardDescription>עדכון שם וטלפון</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSaveProfile} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="full_name">{t('auth.fullName')}</Label>
+                <Label htmlFor="email">אימייל</Label>
+                <Input
+                  id="email"
+                  value={userEmail}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">לא ניתן לשנות את כתובת המייל</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="full_name">שם מלא</Label>
                 <Input
                   id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  value={profileData.full_name}
+                  onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
                   required
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="email">{t('auth.email')}</Label>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{profile?.id}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">לא ניתן לשנות את כתובת המייל</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">{t('auth.phone')}</Label>
+                <Label htmlFor="phone">טלפון</Label>
                 <Input
                   id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={profileData.phone}
+                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                   placeholder="050-0000000"
+                  dir="ltr"
                 />
               </div>
-
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  t('common.save')
-                )}
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'שמור שינויים'}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Account Info Card */}
+        {/* Password Change Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              פרטי חשבון
+              <Key className="h-5 w-5" />
+              שינוי סיסמה
             </CardTitle>
-            <CardDescription>מידע על החשבון והבניין</CardDescription>
+            <CardDescription>עדכון סיסמת הכניסה</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <Label className="text-muted-foreground">תפקיד במערכת</Label>
-              <p className="font-medium">{getRoleLabel(profile?.role || 'tenant')}</p>
-            </div>
-
-            {membership && (
-              <>
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">בניין</Label>
-                  <p className="font-medium">{membership.buildings?.name || '-'}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">כתובת</Label>
-                  <p className="font-medium">{membership.buildings?.address || '-'}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">דירה</Label>
-                  <p className="font-medium">{membership.apartment_number}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">תפקיד בבניין</Label>
-                  <p className="font-medium">{membership.role === 'committee' ? 'ועד בית' : 'דייר'}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">אופן תשלום</Label>
-                  <p className="font-medium">
-                    {membership.payment_method === 'standing_order' ? 'הוראת קבע' : 'מזומן'}
-                    {membership.standing_order_active && ' (פעיל)'}
-                  </p>
-                </div>
-              </>
-            )}
-
-            {!membership && (
-              <p className="text-muted-foreground text-sm">
-                אינך משויך לאף בניין כרגע
-              </p>
-            )}
-
-            <div className="pt-4 border-t">
-              <div className="space-y-1">
-                <Label className="text-muted-foreground">נרשם בתאריך</Label>
-                <p className="font-medium">
-                  {profile?.created_at
-                    ? new Date(profile.created_at).toLocaleDateString('he-IL', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })
-                    : '-'}
-                </p>
+          <CardContent>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">סיסמה חדשה</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  required
+                  minLength={6}
+                />
               </div>
-            </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">אישור סיסמה</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              <Button type="submit" disabled={isChangingPassword}>
+                {isChangingPassword ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'שנה סיסמה'
+                )}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>

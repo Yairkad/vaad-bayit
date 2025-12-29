@@ -132,7 +132,7 @@ export default function AdminUsersPage() {
   const handleToggleAdmin = async () => {
     if (!selectedUser) return;
 
-    const newRole = !isAdmin ? 'admin' : 'user';
+    const newRole = !isAdmin ? 'admin' : 'tenant';
     setIsSaving(true);
 
     try {
@@ -381,11 +381,11 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">שם מלא</TableHead>
-                <TableHead className="text-right">טלפון</TableHead>
-                <TableHead className="text-right">בניינים</TableHead>
-                <TableHead className="text-right">תפקיד</TableHead>
-                <TableHead className="text-right">נרשם</TableHead>
+                <TableHead>שם מלא</TableHead>
+                <TableHead>טלפון</TableHead>
+                <TableHead>בניינים</TableHead>
+                <TableHead>תפקיד</TableHead>
+                <TableHead>נרשם</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

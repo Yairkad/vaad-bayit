@@ -29,27 +29,32 @@ export default function AdminDashboardPage() {
 
     const [
       { count: totalBuildings },
-      { count: totalUsers },
+      { data: allProfiles },
       { count: committeeUsers },
       { data: usersWithBuilding },
       { count: newRequests },
     ] = await Promise.all([
       supabase.from('buildings').select('*', { count: 'exact', head: true }),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('profiles').select('id, role'),
       supabase.from('building_members').select('*', { count: 'exact', head: true }).eq('role', 'committee'),
       supabase.from('building_members').select('user_id').not('user_id', 'is', null),
       supabase.from('contact_requests').select('*', { count: 'exact', head: true }).eq('status', 'new'),
     ]);
 
-    // Calculate users without building assignment
+    // Get profiles data
+    const profiles = (allProfiles || []) as { id: string; role: string }[];
+    const totalUsers = profiles.length;
+
+    // Calculate users without building assignment (excluding admins)
     const assignedUserIds = new Set((usersWithBuilding as { user_id: string }[] || []).map(m => m.user_id));
-    const usersWithoutBuilding = (totalUsers || 0) - assignedUserIds.size;
+    const nonAdminProfiles = profiles.filter(p => p.role !== 'admin');
+    const usersWithoutBuilding = nonAdminProfiles.filter(p => !assignedUserIds.has(p.id)).length;
 
     setStats({
       totalBuildings: totalBuildings || 0,
-      totalUsers: totalUsers || 0,
+      totalUsers: totalUsers,
       committeeUsers: committeeUsers || 0,
-      usersWithoutBuilding: usersWithoutBuilding > 0 ? usersWithoutBuilding : 0,
+      usersWithoutBuilding: usersWithoutBuilding,
       newRequests: newRequests || 0,
     });
     setIsLoading(false);

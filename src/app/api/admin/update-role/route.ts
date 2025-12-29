@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User ID and role are required' }, { status: 400 });
     }
 
-    if (!['admin', 'user'].includes(role)) {
+    if (!['admin', 'tenant'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 

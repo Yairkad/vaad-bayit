@@ -55,6 +55,7 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
   };
 
   const settingsHref = userRole === 'admin' ? '/admin/settings' : userRole === 'tenant' ? '/tenant/settings' : '/dashboard/settings';
+  const profileHref = userRole === 'admin' ? '/admin/profile' : userRole === 'tenant' ? '/tenant/settings' : '/dashboard/settings';
 
   const initials = userName
     .split(' ')
@@ -207,12 +208,6 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href={settingsHref}>
-                <User className="ml-2 h-4 w-4" />
-                פרופיל
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuItem asChild className="cursor-pointer">
               <Link href={settingsHref}>
                 <Settings className="ml-2 h-4 w-4" />
