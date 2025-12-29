@@ -71,6 +71,12 @@ export default function AdminUsersPage() {
   const loadData = async () => {
     const supabase = createClient();
 
+    // Get current user to exclude from list
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser) {
+      setCurrentUserId(currentUser.id);
+    }
+
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('*, building_members(*, buildings(*))')
@@ -82,7 +88,12 @@ export default function AdminUsersPage() {
       .eq('is_approved', true)
       .order('name');
 
-    setUsers((profilesData as ProfileWithMembership[]) || []);
+    // Filter out current user (super admin) from the list
+    const filteredUsers = (profilesData as ProfileWithMembership[])?.filter(
+      u => u.id !== currentUser?.id
+    ) || [];
+
+    setUsers(filteredUsers);
     setBuildings(buildingsData || []);
     setIsLoading(false);
   };
@@ -100,20 +111,28 @@ export default function AdminUsersPage() {
     const newRole = !isAdmin ? 'admin' : 'user';
     setIsSaving(true);
 
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('profiles')
-      .update({ role: newRole } as never)
-      .eq('id', selectedUser.id);
+    try {
+      const response = await fetch('/api/admin/update-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser.id, role: newRole }),
+      });
 
-    if (error) {
-      toast.error('שגיאה בעדכון');
-    } else {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'שגיאה בעדכון');
+      }
+
       setIsAdmin(!isAdmin);
       toast.success(newRole === 'admin' ? 'המשתמש הפך למנהל מערכת' : 'הרשאת מנהל הוסרה');
       loadData();
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error(error instanceof Error ? error.message : 'שגיאה בעדכון');
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleAddMembership = async () => {
