@@ -142,6 +142,121 @@ export default function PaymentsPage() {
     }
   };
 
+  const generateReceipt = (payment: PaymentWithMember) => {
+    const member = payment.building_members;
+    const paidDate = payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('he-IL') : new Date().toLocaleDateString('he-IL');
+    const monthDate = new Date(payment.month);
+    const monthName = monthDate.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+
+    // Create receipt content
+    const receiptContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <title>אישור תשלום</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .header h1 {
+            margin: 0;
+            color: #333;
+          }
+          .header p {
+            margin: 5px 0;
+            color: #666;
+          }
+          .content {
+            line-height: 1.8;
+          }
+          .field {
+            margin: 15px 0;
+          }
+          .field-label {
+            font-weight: bold;
+            color: #555;
+          }
+          .amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+            text-align: center;
+            padding: 20px;
+            background: #f0f9ff;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+          }
+          @media print {
+            body { padding: 20px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>אישור תשלום</h1>
+          <p>${building?.name || ''}</p>
+          <p>${building?.address || ''}</p>
+        </div>
+        <div class="content">
+          <div class="field">
+            <span class="field-label">שם הדייר:</span>
+            <span>${member?.full_name || ''}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">דירה:</span>
+            <span>${member?.apartment_number || ''}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">עבור חודש:</span>
+            <span>${monthName}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">תאריך תשלום:</span>
+            <span>${paidDate}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">אמצעי תשלום:</span>
+            <span>${payment.payment_method === 'standing_order' ? 'הוראת קבע' : 'מזומן'}</span>
+          </div>
+          <div class="amount">
+            סכום ששולם: ₪${Number(payment.amount).toLocaleString()}
+          </div>
+        </div>
+        <div class="footer">
+          <p>אישור זה הופק אוטומטית ע"י מערכת ועד בית</p>
+          <p>תאריך הפקה: ${new Date().toLocaleDateString('he-IL')} ${new Date().toLocaleTimeString('he-IL')}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Open in new window for printing
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(receiptContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
   const togglePayment = async (payment: Payment, isPaid: boolean) => {
     const supabase = createClient();
 
@@ -301,7 +416,7 @@ export default function PaymentsPage() {
                     </Button>
                   )}
                   {payment.is_paid && (
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => generateReceipt(payment)}>
                       <FileText className="h-4 w-4 ml-1" />
                       אישור
                     </Button>
@@ -377,7 +492,7 @@ export default function PaymentsPage() {
                         </Button>
                       )}
                       {payment.is_paid && (
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => generateReceipt(payment)}>
                           <FileText className="h-4 w-4 ml-1" />
                           אישור
                         </Button>
