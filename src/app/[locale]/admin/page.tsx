@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
-import { Building2, Users, UserCheck, UserX, Inbox } from 'lucide-react';
+import { Building2, Users, UserCheck, UserX, Inbox, Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
-import { Loader2 } from 'lucide-react';
+import { StatCard, type StatCardVariant } from '@/components/ui/stat-card';
 
 interface Stats {
   totalBuildings: number;
@@ -60,45 +59,46 @@ export default function AdminDashboardPage() {
     setIsLoading(false);
   };
 
-  const cards = [
+  const cards: {
+    title: string;
+    value: number;
+    icon: typeof Building2;
+    variant: StatCardVariant;
+    href: string;
+  }[] = [
     {
       title: 'סה״כ בניינים',
       value: stats?.totalBuildings || 0,
       icon: Building2,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      variant: 'blue',
       href: '/admin/buildings',
     },
     {
       title: 'סה״כ משתמשים',
       value: stats?.totalUsers || 0,
       icon: Users,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      variant: 'purple',
       href: '/admin/users',
     },
     {
       title: 'מנהלי בניין / ועד',
       value: stats?.committeeUsers || 0,
       icon: UserCheck,
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-100',
+      variant: 'teal',
       href: '/admin/users',
     },
     {
       title: 'לא משויכים',
       value: stats?.usersWithoutBuilding || 0,
       icon: UserX,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
+      variant: 'red',
       href: '/admin/users',
     },
     {
       title: 'פניות חדשות',
       value: stats?.newRequests || 0,
       icon: Inbox,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
+      variant: 'orange',
       href: '/admin/requests',
     },
   ];
@@ -121,23 +121,14 @@ export default function AdminDashboardPage() {
       {/* Stats Grid - Compact on mobile */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
         {cards.map((card, index) => (
-          <Card
+          <StatCard
             key={index}
-            className="cursor-pointer hover:shadow-md transition-shadow"
+            title={card.title}
+            value={card.value}
+            icon={card.icon}
+            variant={card.variant}
             onClick={() => router.push(card.href)}
-          >
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1">
-                <div className={`p-1.5 sm:p-2 rounded-lg ${card.bgColor} shrink-0`}>
-                  <card.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${card.color}`} />
-                </div>
-                <div className="min-w-0 flex-1 sm:w-full">
-                  <p className="text-xs text-muted-foreground truncate">{card.title}</p>
-                  <p className="text-lg sm:text-2xl font-bold">{card.value}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          />
         ))}
       </div>
     </div>

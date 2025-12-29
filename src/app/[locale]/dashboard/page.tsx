@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, CreditCard, AlertTriangle, Receipt } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import type { Building, BuildingMember, Expense } from '@/types/database';
+import type { Building, Expense } from '@/types/database';
+import { StatCard, type StatCardVariant } from '@/components/ui/stat-card';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -76,37 +77,39 @@ export default async function DashboardPage() {
     };
   }
 
-  const cards = [
+  const cards: {
+    title: string;
+    value: string | number;
+    icon: typeof Users;
+    variant: StatCardVariant;
+    href: string;
+  }[] = [
     {
       title: 'דיירים',
       value: stats.tenants,
       icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      variant: 'blue',
       href: '/dashboard/tenants',
     },
     {
       title: 'תשלומים שלא שולמו',
       value: stats.unpaidPayments,
       icon: CreditCard,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
+      variant: 'red',
       href: '/dashboard/payments',
     },
     {
       title: 'תקלות פתוחות',
       value: stats.openIssues,
       icon: AlertTriangle,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
+      variant: 'orange',
       href: '/dashboard/issues',
     },
     {
       title: 'הוצאות החודש',
       value: `₪${stats.monthlyExpenses.toLocaleString()}`,
       icon: Receipt,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      variant: 'green',
       href: '/dashboard/expenses',
     },
   ];
@@ -121,22 +124,15 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {cards.map((card, index) => (
           <Link key={index} href={card.href}>
-            <Card className="cursor-pointer hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {card.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${card.bgColor}`}>
-                  <card.icon className={`h-4 w-4 ${card.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{card.value}</div>
-              </CardContent>
-            </Card>
+            <StatCard
+              title={card.title}
+              value={card.value}
+              icon={card.icon}
+              variant={card.variant}
+            />
           </Link>
         ))}
       </div>

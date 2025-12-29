@@ -4,7 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users, CreditCard, FileText } from 'lucide-react';
-import { ContactForm } from '@/components/ContactForm';
+import { ContactDialog } from '@/components/ContactDialog';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -74,7 +74,7 @@ function HomeContent() {
           <div className="flex gap-4 justify-center">
             <Link href="/register">
               <Button size="lg" className="text-lg px-8">
-                התחל עכשיו
+                הרשמה
               </Button>
             </Link>
             <Link href="/login">
@@ -110,16 +110,16 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* Contact Form Section */}
+      {/* Contact Section */}
       <section id="contact" className="py-20">
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center mb-4">
+        <div className="container mx-auto px-4 text-center">
+          <h3 className="text-3xl font-bold mb-4">
             רוצים להצטרף למערכת?
           </h3>
-          <p className="text-muted-foreground text-center mb-8 max-w-xl mx-auto">
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
             השאירו פרטים ונחזור אליכם עם מידע על הוספת הבניין שלכם למערכת
           </p>
-          <ContactForm />
+          <ContactDialog />
         </div>
       </section>
 

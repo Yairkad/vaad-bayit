@@ -1,0 +1,19 @@
+{
+  "name": "ועד בית - מערכת ניהול",
+  "short_name": "ועד בית",
+  "description": "מערכת לניהול ועד בית - מעקב תשלומים, ניהול דיירים, הודעות ומסמכים",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

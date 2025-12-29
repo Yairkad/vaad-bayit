@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -7,8 +7,34 @@ import { Toaster } from "@/components/ui/sonner";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "ועד בית | Vaad Bayit",
-  description: "מערכת לניהול ועד בית",
+  title: "ועד בית - מערכת ניהול",
+  description: "מערכת חינמית לניהול ועד בית - מעקב תשלומים, ניהול דיירים, הודעות ומסמכים. הכל במקום אחד!",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ועד בית",
+  },
+  openGraph: {
+    title: "ועד בית - מערכת ניהול",
+    description: "מערכת חינמית לניהול ועד בית - מעקב תשלומים, ניהול דיירים, הודעות ומסמכים",
+    type: "website",
+    locale: "he_IL",
+    siteName: "ועד בית",
+  },
+  twitter: {
+    card: "summary",
+    title: "ועד בית - מערכת ניהול",
+    description: "מערכת חינמית לניהול ועד בית",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#3b82f6",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 type Props = {
@@ -40,9 +66,16 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <html lang={locale} dir={dir}>
       <body className="antialiased min-h-screen bg-background font-sans">
+        {/* Skip to main content link for accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:right-4 focus:z-50 focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          דלג לתוכן הראשי
+        </a>
         <NextIntlClientProvider messages={messages}>
           {children}
-          <Toaster position={dir === 'rtl' ? 'top-right' : 'top-left'} />
+          <Toaster />
         </NextIntlClientProvider>
       </body>
     </html>
