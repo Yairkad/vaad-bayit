@@ -48,13 +48,13 @@ export default function TenantMessagesPage() {
       .from('messages')
       .select('*')
       .eq('building_id', membership.building_id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as { data: Message[] | null };
 
     // Get my responses
     const { data: myResponses } = await supabase
       .from('message_responses')
       .select('*')
-      .eq('member_id', membership.id);
+      .eq('member_id', membership.id) as { data: MessageResponse[] | null };
 
     // Combine messages with responses
     const messagesWithResponses: MessageWithResponse[] = (messagesData || []).map(msg => ({
