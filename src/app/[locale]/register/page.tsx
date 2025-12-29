@@ -113,7 +113,7 @@ function RegisterForm() {
         return;
       }
 
-      // Create profile - the trigger should handle this, but as a fallback:
+      // Create/update profile - use upsert in case trigger already created it
       if (authData.user) {
         const profileData: InsertTables<'profiles'> = {
           id: authData.user.id,
@@ -124,7 +124,7 @@ function RegisterForm() {
 
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert(profileData as never);
+          .upsert(profileData as never, { onConflict: 'id' });
 
         if (profileError) {
           console.error('Profile creation error:', profileError);

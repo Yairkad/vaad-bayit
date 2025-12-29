@@ -31,8 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, User, Shield, Building2, UserCog, Plus } from 'lucide-react';
+import { Loader2, User, Shield, Building2, Plus, Trash2, X } from 'lucide-react';
 import type { Profile, Building, BuildingMember } from '@/types/database';
 
 type ProfileWithMembership = Profile & {
@@ -45,36 +46,36 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<ProfileWithMembership | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    role: 'tenant' as 'admin' | 'committee' | 'tenant',
+  // Form state for editing user
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [newMembership, setNewMembership] = useState({
     building_id: '',
-    building_role: 'tenant' as 'committee' | 'tenant',
     apartment_number: '',
-  });
-
-  const [addFormData, setAddFormData] = useState({
-    full_name: '',
-    phone: '',
-    role: 'tenant' as 'admin' | 'committee' | 'tenant',
+    role: 'tenant' as 'committee' | 'tenant',
   });
 
   useEffect(() => {
     loadData();
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setCurrentUserId(data.user.id);
+      }
+    });
   }, []);
 
   const loadData = async () => {
     const supabase = createClient();
 
-    // Load all profiles with their building memberships
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('*, building_members(*, buildings(*))')
       .order('created_at', { ascending: false });
 
-    // Load all approved buildings
     const { data: buildingsData } = await supabase
       .from('buildings')
       .select('*')
@@ -86,87 +87,133 @@ export default function AdminUsersPage() {
     setIsLoading(false);
   };
 
-  const openEditDialog = (user: ProfileWithMembership) => {
+  const openUserDialog = (user: ProfileWithMembership) => {
     setSelectedUser(user);
-    const membership = user.building_members?.[0];
-    setFormData({
-      role: user.role as 'admin' | 'committee' | 'tenant',
-      building_id: membership?.building_id || '',
-      building_role: (membership?.role as 'committee' | 'tenant') || 'tenant',
-      apartment_number: membership?.apartment_number || '',
-    });
+    setIsAdmin(user.role === 'admin');
+    setNewMembership({ building_id: '', apartment_number: '', role: 'tenant' });
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleToggleAdmin = async () => {
     if (!selectedUser) return;
+
+    const newRole = !isAdmin ? 'admin' : 'user';
+    setIsSaving(true);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: newRole } as never)
+      .eq('id', selectedUser.id);
+
+    if (error) {
+      toast.error('שגיאה בעדכון');
+    } else {
+      setIsAdmin(!isAdmin);
+      toast.success(newRole === 'admin' ? 'המשתמש הפך למנהל מערכת' : 'הרשאת מנהל הוסרה');
+      loadData();
+    }
+    setIsSaving(false);
+  };
+
+  const handleAddMembership = async () => {
+    if (!selectedUser || !newMembership.building_id || !newMembership.apartment_number) {
+      toast.error('יש למלא בניין ומספר דירה');
+      return;
+    }
 
     setIsSaving(true);
     const supabase = createClient();
 
-    try {
-      // Update profile role
-      const { error: profileError } = await supabase
+    const { error } = await supabase.from('building_members').insert({
+      building_id: newMembership.building_id,
+      user_id: selectedUser.id,
+      full_name: selectedUser.full_name,
+      role: newMembership.role,
+      apartment_number: newMembership.apartment_number,
+      phone: selectedUser.phone,
+    } as never);
+
+    if (error) {
+      if (error.code === '23505') {
+        toast.error('המשתמש כבר משויך לדירה זו בבניין');
+      } else {
+        toast.error('שגיאה בהוספת שיוך');
+      }
+    } else {
+      toast.success('השיוך נוסף בהצלחה');
+      setNewMembership({ building_id: '', apartment_number: '', role: 'tenant' });
+      loadData();
+      // Refresh selected user
+      const { data } = await supabase
         .from('profiles')
-        .update({ role: formData.role } as never)
-        .eq('id', selectedUser.id);
+        .select('*, building_members(*, buildings(*))')
+        .eq('id', selectedUser.id)
+        .single();
+      if (data) setSelectedUser(data as ProfileWithMembership);
+    }
+    setIsSaving(false);
+  };
 
-      if (profileError) throw profileError;
+  const handleRemoveMembership = async (membershipId: string) => {
+    setIsSaving(true);
+    const supabase = createClient();
 
-      // Handle building membership
-      if (formData.building_id && formData.apartment_number) {
-        const existingMembership = selectedUser.building_members?.[0];
+    const { error } = await supabase
+      .from('building_members')
+      .delete()
+      .eq('id', membershipId);
 
-        if (existingMembership) {
-          // Update existing membership
-          const { error: memberError } = await supabase
-            .from('building_members')
-            .update({
-              building_id: formData.building_id,
-              role: formData.building_role,
-              apartment_number: formData.apartment_number,
-            } as never)
-            .eq('id', existingMembership.id);
+    if (error) {
+      toast.error('שגיאה בהסרת שיוך');
+    } else {
+      toast.success('השיוך הוסר');
+      loadData();
+      // Refresh selected user
+      if (selectedUser) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*, building_members(*, buildings(*))')
+          .eq('id', selectedUser.id)
+          .single();
+        if (data) setSelectedUser(data as ProfileWithMembership);
+      }
+    }
+    setIsSaving(false);
+  };
 
-          if (memberError) throw memberError;
-        } else {
-          // Create new membership
-          const { error: memberError } = await supabase
-            .from('building_members')
-            .insert({
-              building_id: formData.building_id,
-              user_id: selectedUser.id,
-              full_name: selectedUser.full_name,
-              role: formData.building_role,
-              apartment_number: formData.apartment_number,
-              phone: selectedUser.phone,
-            } as never);
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
 
-          if (memberError) throw memberError;
-        }
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/delete-user?userId=${selectedUser.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'שגיאה במחיקת המשתמש');
       }
 
-      toast.success('המשתמש עודכן בהצלחה');
+      toast.success('המשתמש נמחק בהצלחה');
       setIsDialogOpen(false);
+      setSelectedUser(null);
       loadData();
     } catch (error) {
-      console.error(error);
-      toast.error('שגיאה בעדכון');
+      console.error('Delete error:', error);
+      toast.error(error instanceof Error ? error.message : 'שגיאה במחיקת המשתמש');
     } finally {
-      setIsSaving(false);
+      setIsDeleting(false);
     }
   };
 
-  const handleAddUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-
-    // Note: This creates a profile record, but the user won't be able to login
-    // until they register through the auth system. This is for adding "managed" users.
-    toast.info('הוספת משתמשים ידנית אינה נתמכת כרגע. משתמשים צריכים להירשם דרך דף ההרשמה.');
-    setIsSaving(false);
-    setIsAddDialogOpen(false);
+  // Get display role for a user
+  const getDisplayRole = (user: ProfileWithMembership) => {
+    if (user.role === 'admin') return 'admin';
+    const hasCommitteeRole = user.building_members?.some(m => m.role === 'committee');
+    return hasCommitteeRole ? 'committee' : 'tenant';
   };
 
   const getRoleBadge = (role: string) => {
@@ -174,7 +221,7 @@ export default function AdminUsersPage() {
       case 'admin':
         return <Badge className="bg-purple-600">מנהל מערכת</Badge>;
       case 'committee':
-        return <Badge className="bg-blue-600">ועד בית</Badge>;
+        return <Badge className="bg-blue-600">ועד</Badge>;
       default:
         return <Badge variant="secondary">דייר</Badge>;
     }
@@ -196,80 +243,12 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold">ניהול משתמשים</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">צפייה והגדרת הרשאות למשתמשים במערכת</p>
-        </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="ml-2 h-4 w-4" />
-              הוסף משתמש
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>הוספת משתמש חדש</DialogTitle>
-              <DialogDescription>
-                משתמשים נרשמים דרך דף ההרשמה. כאן ניתן להוסיף דיירים מנוהלים.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleAddUser}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="add_name">שם מלא *</Label>
-                  <Input
-                    id="add_name"
-                    value={addFormData.full_name}
-                    onChange={(e) => setAddFormData({ ...addFormData, full_name: e.target.value })}
-                    placeholder="ישראל ישראלי"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="add_phone">טלפון</Label>
-                  <Input
-                    id="add_phone"
-                    value={addFormData.phone}
-                    onChange={(e) => setAddFormData({ ...addFormData, phone: e.target.value })}
-                    placeholder="050-1234567"
-                    dir="ltr"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>תפקיד במערכת</Label>
-                  <Select
-                    value={addFormData.role}
-                    onValueChange={(value: 'admin' | 'committee' | 'tenant') =>
-                      setAddFormData({ ...addFormData, role: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tenant">דייר רגיל</SelectItem>
-                      <SelectItem value="committee">ועד בית</SelectItem>
-                      <SelectItem value="admin">מנהל מערכת</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  ביטול
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'הוסף'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+      <div>
+        <h1 className="text-xl sm:text-3xl font-bold">ניהול משתמשים</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">צפייה והגדרת הרשאות למשתמשים במערכת</p>
       </div>
 
-      {/* Stats - Compact on mobile */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Card>
           <CardContent className="p-3 sm:p-4">
@@ -315,37 +294,36 @@ export default function AdminUsersPage() {
       {/* Mobile Cards View */}
       <div className="lg:hidden space-y-3">
         {users.map((user) => {
-          const membership = user.building_members?.[0];
+          const displayRole = getDisplayRole(user);
+          const memberships = user.building_members || [];
           return (
-            <Card key={user.id}>
+            <Card
+              key={user.id}
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => openUserDialog(user)}
+            >
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0 space-y-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="font-bold truncate">{user.full_name}</span>
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-bold">{user.full_name}</span>
                     </div>
-                    {user.phone && (
-                      <p className="text-sm text-muted-foreground" dir="ltr">{user.phone}</p>
-                    )}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {getRoleBadge(user.role)}
-                      {membership && (
-                        <Badge variant="outline" className="text-xs">
-                          {membership.buildings?.address || membership.buildings?.name} - דירה {membership.apartment_number}
-                        </Badge>
-                      )}
-                    </div>
+                    {getRoleBadge(displayRole)}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEditDialog(user)}
-                    title="ערוך הרשאות"
-                    className="shrink-0"
-                  >
-                    <UserCog className="h-4 w-4" />
-                  </Button>
+                  {user.phone && (
+                    <p className="text-sm text-muted-foreground" dir="ltr">{user.phone}</p>
+                  )}
+                  {memberships.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {memberships.map((m) => (
+                        <Badge key={m.id} variant="outline" className="text-xs">
+                          {m.buildings?.address} - דירה {m.apartment_number}
+                          {m.role === 'committee' && ' (ועד)'}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -369,60 +347,48 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>שם מלא</TableHead>
-                <TableHead>טלפון</TableHead>
-                <TableHead>תפקיד מערכת</TableHead>
-                <TableHead>בניין</TableHead>
-                <TableHead>דירה</TableHead>
-                <TableHead>תפקיד בבניין</TableHead>
-                <TableHead>נרשם</TableHead>
-                <TableHead>פעולות</TableHead>
+                <TableHead className="text-right">שם מלא</TableHead>
+                <TableHead className="text-right">טלפון</TableHead>
+                <TableHead className="text-right">בניינים</TableHead>
+                <TableHead className="text-right">תפקיד</TableHead>
+                <TableHead className="text-right">נרשם</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => {
-                const membership = user.building_members?.[0];
+                const displayRole = getDisplayRole(user);
+                const memberships = user.building_members || [];
                 return (
-                  <TableRow key={user.id}>
+                  <TableRow
+                    key={user.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => openUserDialog(user)}
+                  >
                     <TableCell className="font-medium">{user.full_name}</TableCell>
                     <TableCell dir="ltr" className="text-left">
                       {user.phone || '-'}
                     </TableCell>
-                    <TableCell>{getRoleBadge(user.role)}</TableCell>
                     <TableCell>
-                      {membership?.buildings?.address || membership?.buildings?.name || (
+                      {memberships.length === 0 ? (
                         <span className="text-muted-foreground">לא משויך</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{membership?.apartment_number || '-'}</TableCell>
-                    <TableCell>
-                      {membership ? (
-                        <Badge variant={membership.role === 'committee' ? 'default' : 'outline'}>
-                          {membership.role === 'committee' ? 'ועד' : 'דייר'}
-                        </Badge>
+                      ) : memberships.length === 1 ? (
+                        <span>
+                          {memberships[0].buildings?.address} - דירה {memberships[0].apartment_number}
+                        </span>
                       ) : (
-                        '-'
+                        <span>{memberships.length} בניינים</span>
                       )}
                     </TableCell>
+                    <TableCell>{getRoleBadge(displayRole)}</TableCell>
                     <TableCell>
                       {new Date(user.created_at).toLocaleDateString('he-IL')}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditDialog(user)}
-                        title="ערוך הרשאות"
-                      >
-                        <UserCog className="h-4 w-4" />
-                      </Button>
                     </TableCell>
                   </TableRow>
                 );
               })}
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     אין משתמשים
                   </TableCell>
                 </TableRow>
@@ -432,107 +398,142 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
+      {/* User Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>עריכת הרשאות משתמש</DialogTitle>
+            <DialogTitle>{selectedUser?.full_name}</DialogTitle>
             <DialogDescription>
-              {selectedUser?.full_name}
+              {selectedUser?.phone && <span dir="ltr">{selectedUser.phone}</span>}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>תפקיד במערכת</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value: 'admin' | 'committee' | 'tenant') =>
-                    setFormData({ ...formData, role: value })
-                  }
+
+          <div className="space-y-6 py-4">
+            {/* Admin Toggle */}
+            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+              <div>
+                <Label className="text-base font-medium">מנהל מערכת</Label>
+                <p className="text-sm text-muted-foreground">גישה מלאה לכל הבניינים והמשתמשים</p>
+              </div>
+              <Switch
+                checked={isAdmin}
+                onCheckedChange={handleToggleAdmin}
+                disabled={isSaving || selectedUser?.id === currentUserId}
+              />
+            </div>
+
+            {/* Building Memberships */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">שיוכים לבניינים</Label>
+
+              {selectedUser?.building_members?.map((membership) => (
+                <div key={membership.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div>
+                    <p className="font-medium">{membership.buildings?.address}</p>
+                    <p className="text-sm text-muted-foreground">
+                      דירה {membership.apartment_number} · {membership.role === 'committee' ? 'ועד בית' : 'דייר'}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveMembership(membership.id)}
+                    disabled={isSaving}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+
+              {(!selectedUser?.building_members || selectedUser.building_members.length === 0) && (
+                <p className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg">
+                  המשתמש לא משויך לאף בניין
+                </p>
+              )}
+
+              {/* Add New Membership */}
+              <div className="border-t pt-4 space-y-3">
+                <Label className="text-sm font-medium">הוסף שיוך לבניין</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select
+                    value={newMembership.building_id}
+                    onValueChange={(value) => setNewMembership({ ...newMembership, building_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר בניין" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {buildings.map((building) => (
+                        <SelectItem key={building.id} value={building.id}>
+                          {building.address}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="מס׳ דירה"
+                    value={newMembership.apartment_number}
+                    onChange={(e) => setNewMembership({ ...newMembership, apartment_number: e.target.value })}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={newMembership.role}
+                    onValueChange={(value: 'committee' | 'tenant') =>
+                      setNewMembership({ ...newMembership, role: value })
+                    }
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tenant">דייר</SelectItem>
+                      <SelectItem value="committee">ועד בית</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handleAddMembership}
+                    disabled={isSaving || !newMembership.building_id}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 ml-1" />
+                    הוסף
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Delete User */}
+            {selectedUser?.id !== currentUserId && (
+              <div className="border-t pt-4">
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteUser}
+                  disabled={isDeleting}
+                  className="w-full"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tenant">דייר רגיל</SelectItem>
-                    <SelectItem value="committee">ועד בית</SelectItem>
-                    <SelectItem value="admin">מנהל מערכת</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  מנהל מערכת יכול לנהל את כל הבניינים והמשתמשים
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 ml-2" />
+                      מחק משתמש לצמיתות
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  פעולה זו אינה ניתנת לביטול
                 </p>
               </div>
+            )}
+          </div>
 
-              <div className="border-t pt-4">
-                <Label className="text-base font-medium">שיוך לבניין</Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label>בניין</Label>
-                <Select
-                  value={formData.building_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, building_id: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="בחר בניין..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {buildings.map((building) => (
-                      <SelectItem key={building.id} value={building.id}>
-                        {building.address}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formData.building_id && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>מספר דירה</Label>
-                      <Input
-                        value={formData.apartment_number}
-                        onChange={(e) =>
-                          setFormData({ ...formData, apartment_number: e.target.value })
-                        }
-                        placeholder="לדוגמה: 5"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>תפקיד בבניין</Label>
-                      <Select
-                        value={formData.building_role}
-                        onValueChange={(value: 'committee' | 'tenant') =>
-                          setFormData({ ...formData, building_role: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="tenant">דייר</SelectItem>
-                          <SelectItem value="committee">ועד בית</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                ביטול
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'שמור'}
-              </Button>
-            </DialogFooter>
-          </form>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              סגור
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

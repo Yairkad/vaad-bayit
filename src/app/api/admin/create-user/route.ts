@@ -72,55 +72,40 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      // Create new user with a random password (they'll reset it)
-      const tempPassword = crypto.randomUUID();
-
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      // Invite new user - they will receive an email to set their password
+      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
         email,
-        password: tempPassword,
-        email_confirm: true, // Auto-confirm email so they can login after reset
-        user_metadata: {
-          full_name,
-        },
-      });
+        {
+          data: {
+            full_name,
+          },
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/he/login`,
+        }
+      );
 
-      if (createError || !newUser.user) {
-        console.error('Error creating user:', createError);
+      if (inviteError || !inviteData.user) {
+        console.error('Error inviting user:', inviteError);
         return NextResponse.json(
-          { error: createError?.message || 'Failed to create user' },
+          { error: inviteError?.message || 'Failed to invite user' },
           { status: 500 }
         );
       }
 
-      userId = newUser.user.id;
+      userId = inviteData.user.id;
 
-      // Create profile for the new user
+      // Create profile for the new user with the appropriate system role
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .insert({
           id: userId,
           full_name,
           phone: phone || null,
-          role: 'tenant', // System role - tenant by default
+          role: role === 'committee' ? 'committee' : 'tenant', // System role based on building role
         });
 
       if (profileError) {
         console.error('Error creating profile:', profileError);
         // Don't fail - profile might be created by trigger
-      }
-
-      // Send password reset email so user can set their password
-      const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email,
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/he/reset-password`,
-        },
-      });
-
-      if (resetError) {
-        console.error('Error sending reset email:', resetError);
-        // Continue anyway - admin can resend
       }
     }
 

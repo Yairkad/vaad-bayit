@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, Users, Shield, UserCheck, Inbox } from 'lucide-react';
+import { Building2, Users, UserCheck, UserX, Inbox } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { Loader2 } from 'lucide-react';
 
 interface Stats {
   totalBuildings: number;
   totalUsers: number;
-  adminUsers: number;
-  usersWithBuilding: number;
+  committeeUsers: number;
+  usersWithoutBuilding: number;
   newRequests: number;
 }
 
@@ -30,22 +30,26 @@ export default function AdminDashboardPage() {
     const [
       { count: totalBuildings },
       { count: totalUsers },
-      { count: adminUsers },
-      { count: usersWithBuilding },
+      { count: committeeUsers },
+      { data: usersWithBuilding },
       { count: newRequests },
     ] = await Promise.all([
       supabase.from('buildings').select('*', { count: 'exact', head: true }),
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
-      supabase.from('building_members').select('user_id', { count: 'exact', head: true }).not('user_id', 'is', null),
+      supabase.from('building_members').select('*', { count: 'exact', head: true }).eq('role', 'committee'),
+      supabase.from('building_members').select('user_id').not('user_id', 'is', null),
       supabase.from('contact_requests').select('*', { count: 'exact', head: true }).eq('status', 'new'),
     ]);
+
+    // Calculate users without building assignment
+    const assignedUserIds = new Set((usersWithBuilding as { user_id: string }[] || []).map(m => m.user_id));
+    const usersWithoutBuilding = (totalUsers || 0) - assignedUserIds.size;
 
     setStats({
       totalBuildings: totalBuildings || 0,
       totalUsers: totalUsers || 0,
-      adminUsers: adminUsers || 0,
-      usersWithBuilding: usersWithBuilding || 0,
+      committeeUsers: committeeUsers || 0,
+      usersWithoutBuilding: usersWithoutBuilding > 0 ? usersWithoutBuilding : 0,
       newRequests: newRequests || 0,
     });
     setIsLoading(false);
@@ -69,20 +73,20 @@ export default function AdminDashboardPage() {
       href: '/admin/users',
     },
     {
-      title: 'מנהלי מערכת',
-      value: stats?.adminUsers || 0,
-      icon: Shield,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
-      href: '/admin/users',
-    },
-    {
-      title: 'משויכים לבניין',
-      value: stats?.usersWithBuilding || 0,
+      title: 'מנהלי בניין / ועד',
+      value: stats?.committeeUsers || 0,
       icon: UserCheck,
       color: 'text-teal-600',
       bgColor: 'bg-teal-100',
-      href: '/admin/buildings',
+      href: '/admin/users',
+    },
+    {
+      title: 'לא משויכים',
+      value: stats?.usersWithoutBuilding || 0,
+      icon: UserX,
+      color: 'text-red-600',
+      bgColor: 'bg-red-100',
+      href: '/admin/users',
     },
     {
       title: 'פניות חדשות',
