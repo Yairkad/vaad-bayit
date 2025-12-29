@@ -16,6 +16,7 @@ import {
   Settings,
   LogOut,
   Link2,
+  Inbox,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
@@ -41,6 +42,7 @@ export function Sidebar({ userRole }: SidebarProps) {
     { href: '/admin', icon: LayoutDashboard, label: t('dashboard') },
     { href: '/admin/buildings', icon: Building2, label: t('buildings') },
     { href: '/admin/users', icon: Users, label: 'משתמשים' },
+    { href: '/admin/requests', icon: Inbox, label: 'פניות חדשות' },
   ];
 
   const committeeLinks = [

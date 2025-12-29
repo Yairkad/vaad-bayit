@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users, CreditCard, FileText } from 'lucide-react';
+import { ContactForm } from '@/components/ContactForm';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -109,20 +110,16 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h3 className="text-3xl font-bold mb-6">
-            מוכנים להתחיל?
+      {/* Contact Form Section */}
+      <section id="contact" className="py-20">
+        <div className="container mx-auto px-4">
+          <h3 className="text-3xl font-bold text-center mb-4">
+            רוצים להצטרף למערכת?
           </h3>
-          <p className="text-muted-foreground mb-8">
-            הרשמו עכשיו והתחילו לנהל את ועד הבית שלכם בצורה מסודרת
+          <p className="text-muted-foreground text-center mb-8 max-w-xl mx-auto">
+            השאירו פרטים ונחזור אליכם עם מידע על הוספת הבניין שלכם למערכת
           </p>
-          <Link href="/register">
-            <Button size="lg" className="text-lg px-8">
-              הרשמה חינם
-            </Button>
-          </Link>
+          <ContactForm />
         </div>
       </section>
 

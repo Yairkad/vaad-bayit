@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Check, X, Loader2, Building2, Trash2, Pencil, UserPlus } from 'lucide-react';
+import { Plus, Loader2, Building2, Trash2, Pencil, UserPlus } from 'lucide-react';
 import type { Building, Profile, BuildingMember } from '@/types/database';
 
 type BuildingWithCreator = Building & {
@@ -49,7 +48,6 @@ export default function AdminBuildingsPage() {
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
 
   const [formData, setFormData] = useState({
     address: '',
@@ -317,23 +315,6 @@ export default function AdminBuildingsPage() {
     }
   };
 
-  const approveBuilding = async (building: Building) => {
-    const supabase = createClient();
-
-    const { error } = await supabase
-      .from('buildings')
-      .update({ is_approved: true } as never)
-      .eq('id', building.id);
-
-    if (error) {
-      toast.error('שגיאה באישור');
-      return;
-    }
-
-    toast.success('הבניין אושר');
-    loadData();
-  };
-
   const deleteBuilding = async (building: Building) => {
     if (!confirm('האם למחוק את הבניין? פעולה זו תמחק גם את כל הדיירים והנתונים הקשורים.')) return;
 
@@ -351,19 +332,6 @@ export default function AdminBuildingsPage() {
 
     toast.success('הבניין נמחק');
     loadData();
-  };
-
-  const filteredBuildings = buildings.filter(b => {
-    if (filter === 'all') return true;
-    if (filter === 'pending') return !b.is_approved;
-    if (filter === 'approved') return b.is_approved;
-    return true;
-  });
-
-  const counts = {
-    all: buildings.length,
-    pending: buildings.filter(b => !b.is_approved).length,
-    approved: buildings.filter(b => b.is_approved).length,
   };
 
   if (isLoading) {
@@ -650,28 +618,9 @@ export default function AdminBuildingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {(['all', 'pending', 'approved'] as const).map((status) => (
-          <Button
-            key={status}
-            variant={filter === status ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter(status)}
-          >
-            {status === 'all' && 'הכל'}
-            {status === 'pending' && 'ממתין לאישור'}
-            {status === 'approved' && 'מאושר'}
-            <span className="mr-2 bg-white/20 px-1.5 py-0.5 rounded text-xs">
-              {counts[status]}
-            </span>
-          </Button>
-        ))}
-      </div>
-
       {/* Cards View (Mobile & Tablet) */}
       <div className="lg:hidden grid gap-3 sm:grid-cols-2">
-        {filteredBuildings.map((building) => (
+        {buildings.map((building) => (
           <Card key={building.id}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-2">
@@ -683,37 +632,76 @@ export default function AdminBuildingsPage() {
                   {building.city && (
                     <p className="text-sm text-muted-foreground truncate">{building.city}</p>
                   )}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant={building.is_approved ? 'default' : 'secondary'}>
-                      {building.is_approved ? 'מאושר' : 'ממתין'}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {building.member_count} דיירים
-                    </span>
-                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {building.member_count} דיירים
+                  </span>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  {!building.is_approved ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => approveBuilding(building)}
-                        title="אשר"
-                      >
-                        <Check className="h-4 w-4 text-green-600" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteBuilding(building)}
-                        title="דחה"
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEditDialog(building)}
+                    title="ערוך"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openAddUserDialog(building)}
+                    title="הוסף משתמש"
+                  >
+                    <UserPlus className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteBuilding(building)}
+                    title="מחק"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {buildings.length === 0 && (
+          <Card className="sm:col-span-2">
+            <CardContent className="p-6 text-center text-muted-foreground">
+              אין בניינים
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <Card className="hidden lg:block">
+        <CardHeader>
+          <CardTitle className="text-lg">רשימת בניינים</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead></TableHead>
+                <TableHead>כתובת</TableHead>
+                <TableHead>עיר</TableHead>
+                <TableHead>דיירים</TableHead>
+                <TableHead>פעולות</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {buildings.map((building) => (
+                <TableRow key={building.id}>
+                  <TableCell>
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                  </TableCell>
+                  <TableCell className="font-medium">{building.address}</TableCell>
+                  <TableCell>{building.city || '-'}</TableCell>
+                  <TableCell>{building.member_count}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -738,109 +726,13 @@ export default function AdminBuildingsPage() {
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {filteredBuildings.length === 0 && (
-          <Card className="sm:col-span-2">
-            <CardContent className="p-6 text-center text-muted-foreground">
-              אין בניינים
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Desktop Table View */}
-      <Card className="hidden lg:block">
-        <CardHeader>
-          <CardTitle className="text-lg">רשימת בניינים</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead></TableHead>
-                <TableHead>כתובת</TableHead>
-                <TableHead>עיר</TableHead>
-                <TableHead>דיירים</TableHead>
-                <TableHead>סטטוס</TableHead>
-                <TableHead>פעולות</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredBuildings.map((building) => (
-                <TableRow key={building.id}>
-                  <TableCell>
-                    <Building2 className="h-5 w-5 text-muted-foreground" />
-                  </TableCell>
-                  <TableCell className="font-medium">{building.address}</TableCell>
-                  <TableCell>{building.city || '-'}</TableCell>
-                  <TableCell>{building.member_count}</TableCell>
-                  <TableCell>
-                    <Badge variant={building.is_approved ? 'default' : 'secondary'}>
-                      {building.is_approved ? 'מאושר' : 'ממתין'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {!building.is_approved ? (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => approveBuilding(building)}
-                            title="אשר"
-                          >
-                            <Check className="h-4 w-4 text-green-600" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteBuilding(building)}
-                            title="דחה"
-                          >
-                            <X className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(building)}
-                            title="ערוך"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openAddUserDialog(building)}
-                            title="הוסף משתמש"
-                          >
-                            <UserPlus className="h-4 w-4 text-blue-600" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteBuilding(building)}
-                            title="מחק"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredBuildings.length === 0 && (
+              {buildings.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     אין בניינים
                   </TableCell>
                 </TableRow>
