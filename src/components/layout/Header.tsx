@@ -94,7 +94,7 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
   const links = userRole === 'admin' ? adminLinks : userRole === 'committee' ? committeeLinks : tenantLinks;
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-background/95 backdrop-blur border-b">
+    <header className="sticky top-0 z-30 h-16 bg-gradient-header border-b">
       <div className="h-full px-4 flex items-center justify-between gap-4">
         {/* Mobile menu button */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>

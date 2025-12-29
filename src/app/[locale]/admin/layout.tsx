@@ -32,7 +32,7 @@ export default async function AdminLayout({
   const userName = profile?.full_name || user.email || 'מנהל';
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-gradient-main">
       {/* Sidebar - hidden on mobile */}
       <div className="hidden md:block">
         <Sidebar userRole="admin" />
@@ -41,7 +41,7 @@ export default async function AdminLayout({
       {/* Main content */}
       <div className="md:mr-64">
         <Header userName={userName} userRole="admin" />
-        <main className="p-6">
+        <main id="main-content" className="p-6">
           {children}
         </main>
       </div>

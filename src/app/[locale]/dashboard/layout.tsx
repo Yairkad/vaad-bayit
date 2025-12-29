@@ -57,7 +57,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-gradient-main">
       {/* Sidebar - hidden on mobile */}
       <div className="hidden md:block">
         <Sidebar userRole={userRole} />
@@ -66,7 +66,7 @@ export default async function DashboardLayout({
       {/* Main content */}
       <div className="md:mr-64">
         <Header userName={userName} buildingName={buildingName} userRole={userRole} />
-        <main className="p-6">
+        <main id="main-content" className="p-6">
           {children}
         </main>
       </div>

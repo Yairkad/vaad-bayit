@@ -68,7 +68,7 @@ export function Sidebar({ userRole }: SidebarProps) {
   const links = userRole === 'admin' ? adminLinks : userRole === 'committee' ? committeeLinks : tenantLinks;
 
   return (
-    <aside className="fixed top-0 right-0 h-full w-64 bg-card border-l flex flex-col z-40">
+    <aside className="fixed top-0 right-0 h-full w-64 bg-gradient-sidebar border-l flex flex-col z-40">
       {/* Logo */}
       <div className="p-6 border-b">
         <Link href="/" className="flex items-center gap-2">

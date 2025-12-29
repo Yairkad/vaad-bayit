@@ -82,7 +82,7 @@ export default function TenantLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-main">
       <Header
         userName={userData?.fullName || 'משתמש'}
         buildingName={userData?.buildingName || undefined}
@@ -90,7 +90,7 @@ export default function TenantLayout({
       />
       <div className="flex">
         <Sidebar userRole="tenant" />
-        <main className="flex-1 p-4 md:p-6 md:mr-64">
+        <main id="main-content" className="flex-1 p-4 md:p-6 md:mr-64">
           {children}
         </main>
       </div>

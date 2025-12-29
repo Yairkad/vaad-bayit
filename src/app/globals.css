@@ -123,3 +123,43 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Gradient backgrounds */
+.bg-gradient-main {
+  background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 50%, #f0f9ff 100%);
+}
+
+.dark .bg-gradient-main {
+  background: linear-gradient(135deg, #042f2e 0%, #083344 50%, #0c1929 100%);
+}
+
+/* Sidebar gradient */
+.bg-gradient-sidebar {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(240,253,250,0.9) 100%);
+  backdrop-filter: blur(10px);
+}
+
+.dark .bg-gradient-sidebar {
+  background: linear-gradient(180deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.9) 100%);
+  backdrop-filter: blur(10px);
+}
+
+/* Card with subtle gradient */
+.bg-gradient-card {
+  background: linear-gradient(145deg, rgba(255,255,255,1) 0%, rgba(240,253,250,0.5) 100%);
+}
+
+.dark .bg-gradient-card {
+  background: linear-gradient(145deg, rgba(30,41,59,1) 0%, rgba(15,23,42,0.8) 100%);
+}
+
+/* Header gradient */
+.bg-gradient-header {
+  background: linear-gradient(90deg, rgba(255,255,255,0.9) 0%, rgba(236,254,255,0.9) 50%, rgba(240,249,255,0.9) 100%);
+  backdrop-filter: blur(10px);
+}
+
+.dark .bg-gradient-header {
+  background: linear-gradient(90deg, rgba(30,41,59,0.9) 0%, rgba(8,51,68,0.9) 50%, rgba(12,25,41,0.9) 100%);
+  backdrop-filter: blur(10px);
+}
