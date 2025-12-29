@@ -78,7 +78,11 @@ export function Sidebar({ userRole }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {links.map((link) => {
-          const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
+          // Check if this is an exact match or a sub-path match (but not for root paths)
+          const isRootPath = link.href === '/dashboard' || link.href === '/admin' || link.href === '/tenant';
+          const isActive = isRootPath
+            ? pathname === link.href
+            : pathname === link.href || pathname.startsWith(link.href + '/');
           return (
             <Link
               key={link.href}
@@ -100,7 +104,7 @@ export function Sidebar({ userRole }: SidebarProps) {
       {/* Footer */}
       <div className="p-4 border-t space-y-1">
         <Link
-          href="/dashboard/settings"
+          href={userRole === 'admin' ? '/admin/settings' : userRole === 'tenant' ? '/tenant/settings' : '/dashboard/settings'}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <Settings className="h-5 w-5" />

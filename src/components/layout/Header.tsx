@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { usePathname, useRouter } from '@/i18n/navigation';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -53,11 +53,7 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
     router.refresh();
   };
 
-  const handleNavigate = (href: string) => {
-    router.push(href);
-    // Close sheet after a small delay to ensure navigation starts
-    setTimeout(() => setIsOpen(false), 100);
-  };
+  const settingsHref = userRole === 'admin' ? '/admin/settings' : userRole === 'tenant' ? '/tenant/settings' : '/dashboard/settings';
 
   const initials = userName
     .split(' ')
@@ -107,13 +103,14 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
           <SheetContent side="right" className="w-72 p-0 flex flex-col">
             {/* Logo */}
             <div className="p-6 border-b">
-              <button
-                onClick={() => handleNavigate('/')}
+              <Link
+                href="/"
+                onClick={() => setIsOpen(false)}
                 className="flex items-center gap-2"
               >
                 <Building2 className="h-8 w-8 text-primary" />
                 <span className="text-xl font-bold">ועד בית</span>
-              </button>
+              </Link>
             </div>
 
             {/* Building info on mobile */}
@@ -129,12 +126,16 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
               {links.map((link) => {
-                const isActive = pathname === link.href ||
-                  (link.href !== '/dashboard' && link.href !== '/admin' && link.href !== '/tenant' && pathname.startsWith(link.href));
+                // Check if this is an exact match or a sub-path match (but not for root paths)
+                const isRootPath = link.href === '/dashboard' || link.href === '/admin' || link.href === '/tenant';
+                const isActive = isRootPath
+                  ? pathname === link.href
+                  : pathname === link.href || pathname.startsWith(link.href + '/');
                 return (
-                  <button
+                  <Link
                     key={link.href}
-                    onClick={() => handleNavigate(link.href)}
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors w-full',
                       isActive
@@ -144,20 +145,21 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
                   >
                     <link.icon className="h-5 w-5" />
                     {link.label}
-                  </button>
+                  </Link>
                 );
               })}
             </nav>
 
             {/* Footer */}
             <div className="p-4 border-t space-y-1 mt-auto">
-              <button
-                onClick={() => handleNavigate('/dashboard/settings')}
+              <Link
+                href={settingsHref}
+                onClick={() => setIsOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full"
               >
                 <Settings className="h-5 w-5" />
                 {tNav('settings')}
-              </button>
+              </Link>
               <button
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors w-full"
                 onClick={() => {
@@ -203,13 +205,17 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuLabel>החשבון שלי</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')} className="cursor-pointer">
-              <User className="ml-2 h-4 w-4" />
-              פרופיל
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href={settingsHref}>
+                <User className="ml-2 h-4 w-4" />
+                פרופיל
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')} className="cursor-pointer">
-              <Settings className="ml-2 h-4 w-4" />
-              {t('nav.settings')}
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href={settingsHref}>
+                <Settings className="ml-2 h-4 w-4" />
+                {t('nav.settings')}
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">

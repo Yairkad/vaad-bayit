@@ -40,7 +40,7 @@ export default async function AdminLayout({
 
       {/* Main content */}
       <div className="md:mr-64">
-        <Header userName={userName} />
+        <Header userName={userName} userRole="admin" />
         <main className="p-6">
           {children}
         </main>
