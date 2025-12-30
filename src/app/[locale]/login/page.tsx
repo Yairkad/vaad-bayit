@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,16 +11,26 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Building2, Loader2 } from 'lucide-react';
+import { Building2, Loader2, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslations();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showVerifiedMessage, setShowVerifiedMessage] = useState(false);
 
   const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    // Check if user just verified their email
+    if (searchParams.get('verified') === 'true') {
+      setShowVerifiedMessage(true);
+      toast.success('המייל אומת בהצלחה! כעת ניתן להתחבר.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +148,17 @@ export default function LoginPage() {
           <CardTitle className="text-2xl">{t('auth.loginTitle')}</CardTitle>
           <CardDescription>{t('common.appName')}</CardDescription>
         </CardHeader>
+        {showVerifiedMessage && (
+          <div className="mx-6 mb-4 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">המייל אומת בהצלחה!</span>
+            </div>
+            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+              כעת ניתן להתחבר למערכת. ניתן לסגור את הטאב הזה ולחזור לטאב המקורי.
+            </p>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">

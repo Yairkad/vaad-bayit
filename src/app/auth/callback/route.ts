@@ -17,6 +17,12 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/he/reset-password`);
       }
 
+      // For email verification (signup), redirect to login with success message
+      // This is better UX because the user opened this in a new tab from email
+      if (type === 'signup' || type === 'email') {
+        return NextResponse.redirect(`${origin}/he/login?verified=true`);
+      }
+
       // Otherwise redirect to the next page or dashboard
       return NextResponse.redirect(`${origin}${next}`);
     }
