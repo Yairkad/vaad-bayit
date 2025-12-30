@@ -44,7 +44,7 @@ function HomeContent() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#f0f9ff]">
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 bg-[#bee4fa] border-b border-[#a5d4f0] shadow-sm">
         <div className="container mx-auto px-4 py-3">
@@ -68,7 +68,7 @@ function HomeContent() {
       </header>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-[#bee4fa]/30 to-background">
+      <section>
         <div className="container mx-auto px-4 py-20 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             מערכת ניהול ועד בית
@@ -93,7 +93,7 @@ function HomeContent() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-white/50">
         <div className="container mx-auto px-4">
           <h3 className="text-3xl font-bold text-center mb-12">
             מה המערכת מציעה?
@@ -130,8 +130,8 @@ function HomeContent() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
+      <footer className="border-t border-[#a5d4f0] py-8 bg-[#bee4fa]/30">
+        <div className="container mx-auto px-4 text-center text-[#203857]/70">
           <p>© {new Date().getFullYear()} ועד בית. כל הזכויות שמורות.</p>
           <p className="text-sm mt-2">
             מערכת לניהול ועד בית - מעקב ותיעוד בלבד
