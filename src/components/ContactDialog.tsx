@@ -103,9 +103,9 @@ export function ContactDialog() {
           </div>
         ) : (
           <>
-            <DialogHeader>
-              <DialogTitle>רוצים להצטרף?</DialogTitle>
-              <DialogDescription>
+            <DialogHeader className="text-center">
+              <DialogTitle className="text-center">רוצים להצטרף?</DialogTitle>
+              <DialogDescription className="text-center">
                 מלאו את הפרטים ונחזור אליכם עם מידע על הוספת הבניין למערכת
               </DialogDescription>
             </DialogHeader>

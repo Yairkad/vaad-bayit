@@ -130,12 +130,26 @@ function HomeContent() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#a5d4f0] py-8 bg-[#bee4fa]/30">
+      <footer className="border-t border-[#a5d4f0] py-6 bg-[#bee4fa]/30">
         <div className="container mx-auto px-4 text-center text-[#203857]/70">
-          <p>© {new Date().getFullYear()} ועד בית. כל הזכויות שמורות.</p>
-          <p className="text-sm mt-2">
-            מערכת לניהול ועד בית - מעקב ותיעוד בלבד
-          </p>
+          <div className="flex justify-center gap-4 text-sm mb-3">
+            <Link href="/terms" className="hover:text-[#203857] hover:underline">
+              תקנון
+            </Link>
+            <span>|</span>
+            <Link href="/privacy" className="hover:text-[#203857] hover:underline">
+              מדיניות פרטיות
+            </Link>
+            <span>|</span>
+            <Link href="/accessibility" className="hover:text-[#203857] hover:underline">
+              נגישות
+            </Link>
+            <span>|</span>
+            <a href="#contact" className="hover:text-[#203857] hover:underline">
+              צור קשר
+            </a>
+          </div>
+          <p className="text-sm">© {new Date().getFullYear()} כל הזכויות שמורות למערכת ועד בית.</p>
         </div>
       </footer>
     </div>
