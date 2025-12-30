@@ -4,6 +4,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Toaster } from "@/components/ui/sonner";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -81,6 +82,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <NextIntlClientProvider messages={messages}>
           {children}
           <Toaster />
+          <OfflineIndicator />
         </NextIntlClientProvider>
       </body>
     </html>
