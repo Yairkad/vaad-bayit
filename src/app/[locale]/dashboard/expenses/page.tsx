@@ -510,10 +510,14 @@ export default function ExpensesPage() {
                     <div className="flex items-center gap-2">
                       {new Date(expense.expense_date).toLocaleDateString('he-IL')}
                       {expense.recurrence === 'monthly' && (
-                        <Repeat className="h-3 w-3 text-blue-500" title="קבוע חודשי" />
+                        <span title="קבוע חודשי">
+                          <Repeat className="h-3 w-3 text-blue-500" />
+                        </span>
                       )}
                       {expense.recurrence === 'bi_monthly' && (
-                        <Calendar className="h-3 w-3 text-purple-500" title="דו-חודשי" />
+                        <span title="דו-חודשי">
+                          <Calendar className="h-3 w-3 text-purple-500" />
+                        </span>
                       )}
                     </div>
                   </TableCell>
