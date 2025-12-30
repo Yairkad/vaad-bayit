@@ -123,6 +123,7 @@ function RegisterForm() {
           const profileData: InsertTables<'profiles'> = {
             id: userId,
             full_name: formData.fullName,
+            email: formData.email,
             phone: formData.phone || null,
             role: 'tenant',
           };

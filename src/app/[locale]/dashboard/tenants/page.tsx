@@ -35,15 +35,16 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, UserCheck, UserX, Loader2 } from 'lucide-react';
-import type { BuildingMember, Building } from '@/types/database';
+import type { BuildingMember, Building, Profile } from '@/types/database';
 
-type MemberWithBuilding = BuildingMember & {
+type MemberWithProfile = BuildingMember & {
   buildings?: Building;
+  profiles?: Pick<Profile, 'full_name' | 'phone' | 'email'> & { id: string } | null;
 };
 
 export default function TenantsPage() {
   const t = useTranslations();
-  const [members, setMembers] = useState<MemberWithBuilding[]>([]);
+  const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [buildingName, setBuildingName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -87,12 +88,12 @@ export default function TenantsPage() {
       setBuildingId(membership.building_id);
       setBuildingName((membership.buildings as Building)?.name || '');
 
-      // Load all members of this building
+      // Load all members of this building with profiles for email
       const { data: membersData } = await supabase
         .from('building_members')
-        .select('*')
+        .select('*, profiles(id, full_name, phone, email)')
         .eq('building_id', membership.building_id)
-        .order('apartment_number');
+        .order('apartment_number') as { data: MemberWithProfile[] | null };
 
       setMembers(membersData || []);
     }
@@ -429,8 +430,8 @@ export default function TenantsPage() {
                   {member.phone && (
                     <p className="text-sm text-muted-foreground" dir="ltr">{member.phone}</p>
                   )}
-                  {member.email && (
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
+                  {(member.profiles?.email || member.email) && (
+                    <p className="text-sm text-muted-foreground">{member.profiles?.email || member.email}</p>
                   )}
                   <p className="text-sm text-muted-foreground">
                     {member.payment_method === 'standing_order' ? (
@@ -501,7 +502,7 @@ export default function TenantsPage() {
                   <TableCell className="font-medium">{member.apartment_number}</TableCell>
                   <TableCell>{member.full_name}</TableCell>
                   <TableCell dir="ltr" className="text-left">{member.phone || '-'}</TableCell>
-                  <TableCell>{member.email || '-'}</TableCell>
+                  <TableCell>{member.profiles?.email || member.email || '-'}</TableCell>
                   <TableCell>
                     <Badge variant={member.role === 'committee' ? 'default' : 'secondary'}>
                       {member.role === 'committee' ? 'ועד' : 'דייר'}
