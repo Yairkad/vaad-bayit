@@ -52,6 +52,7 @@ export interface Database {
           address: string
           city: string | null
           monthly_fee: number
+          opening_balance: number
           is_approved: boolean
           created_by: string | null
           created_at: string
@@ -62,6 +63,7 @@ export interface Database {
           address: string
           city?: string | null
           monthly_fee?: number
+          opening_balance?: number
           is_approved?: boolean
           created_by?: string | null
           created_at?: string
@@ -72,6 +74,7 @@ export interface Database {
           address?: string
           city?: string | null
           monthly_fee?: number
+          opening_balance?: number
           is_approved?: boolean
           created_by?: string | null
           created_at?: string
@@ -282,6 +285,7 @@ export interface Database {
           description: string | null
           status: IssueStatus
           priority: IssuePriority
+          in_progress_response: string | null
           closing_response: string | null
           closed_at: string | null
           created_at: string
@@ -294,6 +298,7 @@ export interface Database {
           description?: string | null
           status?: IssueStatus
           priority?: IssuePriority
+          in_progress_response?: string | null
           closing_response?: string | null
           closed_at?: string | null
           created_at?: string
@@ -306,6 +311,7 @@ export interface Database {
           description?: string | null
           status?: IssueStatus
           priority?: IssuePriority
+          in_progress_response?: string | null
           closing_response?: string | null
           closed_at?: string | null
           created_at?: string

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Key, ArrowRight, LogOut } from 'lucide-react';
+import { Loader2, User, Key, ArrowRight, LogOut, Building2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import type { Profile, BuildingMember, Building } from '@/types/database';
 
@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSavingBuilding, setIsSavingBuilding] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [membership, setMembership] = useState<MemberWithBuilding | null>(null);
   const [userEmail, setUserEmail] = useState('');
@@ -28,6 +29,10 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
+  });
+
+  const [buildingData, setBuildingData] = useState({
+    monthly_fee: '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -72,6 +77,11 @@ export default function SettingsPage() {
 
     if (membershipData) {
       setMembership(membershipData);
+      if (membershipData.buildings && membershipData.role === 'committee') {
+        setBuildingData({
+          monthly_fee: membershipData.buildings.monthly_fee?.toString() || '',
+        });
+      }
     }
 
     setIsLoading(false);
@@ -163,6 +173,33 @@ export default function SettingsPage() {
       toast.error('שגיאה בשינוי הסיסמה');
     } finally {
       setIsChangingPassword(false);
+    }
+  };
+
+  const handleSaveBuilding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!membership?.building_id) return;
+
+    setIsSavingBuilding(true);
+    const supabase = createClient();
+
+    try {
+      const { error } = await supabase
+        .from('buildings')
+        .update({
+          monthly_fee: buildingData.monthly_fee ? parseFloat(buildingData.monthly_fee) : null,
+        } as never)
+        .eq('id', membership.building_id);
+
+      if (error) throw error;
+
+      toast.success('הגדרות הבניין עודכנו בהצלחה');
+      loadData();
+    } catch (error) {
+      console.error(error);
+      toast.error('שגיאה בעדכון הגדרות הבניין');
+    } finally {
+      setIsSavingBuilding(false);
     }
   };
 
@@ -314,6 +351,46 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Building Settings Card - Only for committee members */}
+      {membership?.role === 'committee' && membership.buildings && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              הגדרות בניין
+            </CardTitle>
+            <CardDescription>הגדרות תשלום ועד בית עבור {membership.buildings.name}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSaveBuilding} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="monthly_fee">סכום תשלום חודשי (₪)</Label>
+                <Input
+                  id="monthly_fee"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={buildingData.monthly_fee}
+                  onChange={(e) => setBuildingData({ ...buildingData, monthly_fee: e.target.value })}
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-muted-foreground">
+                  סכום זה ישמש כברירת מחדל לכל הדיירים. ניתן להגדיר סכום שונה לדייר ספציפי בדף הדיירים.
+                </p>
+              </div>
+
+              <Button type="submit" disabled={isSavingBuilding}>
+                {isSavingBuilding ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  t('common.save')
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Logout Card */}
       <Card className="border-red-200">

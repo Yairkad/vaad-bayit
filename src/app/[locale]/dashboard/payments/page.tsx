@@ -115,14 +115,27 @@ export default function PaymentsPage() {
       // Use member's custom monthly_amount if set, otherwise fall back to building's monthly_fee
       const newPayments = members
         .filter(m => !existingMemberIds.includes(m.id))
+        .filter(member => {
+          // Only create payment if we have a valid amount
+          const amount = member.monthly_amount ?? building.monthly_fee ?? 0;
+          return amount > 0;
+        })
         .map(member => ({
           building_id: buildingId,
           member_id: member.id,
           month: monthStart,
-          amount: member.monthly_amount || building.monthly_fee,
+          amount: member.monthly_amount ?? building.monthly_fee ?? 0,
           is_paid: member.payment_method === 'standing_order' && member.standing_order_active,
           payment_method: member.payment_method,
         }));
+
+      // Count members who were skipped due to no valid amount
+      const membersWithoutFee = members
+        .filter(m => !existingMemberIds.includes(m.id))
+        .filter(member => {
+          const amount = member.monthly_amount ?? building.monthly_fee ?? 0;
+          return amount <= 0;
+        });
 
       if (newPayments.length > 0) {
         const { error } = await supabase
@@ -131,7 +144,13 @@ export default function PaymentsPage() {
 
         if (error) throw error;
         toast.success(`נוצרו ${newPayments.length} רשומות תשלום`);
+
+        if (membersWithoutFee.length > 0) {
+          toast.warning(`${membersWithoutFee.length} דיירים לא נוספו - חסר סכום תשלום חודשי`);
+        }
         loadPayments();
+      } else if (membersWithoutFee.length > 0) {
+        toast.warning('לא ניתן ליצור תשלומים - יש להגדיר סכום תשלום חודשי לבניין או לדיירים');
       } else {
         toast.info('כל הדיירים כבר קיימים ברשימה לחודש זה');
       }

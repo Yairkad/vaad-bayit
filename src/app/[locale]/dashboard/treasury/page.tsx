@@ -56,7 +56,7 @@ export default function TreasuryPage() {
 
     if (membership?.building_id) {
       setBuildingId(membership.building_id);
-      const buildingData = membership.buildings as Building & { opening_balance?: number };
+      const buildingData = membership.buildings as Building;
       setBuilding(buildingData);
       const startingBalance = Number(buildingData?.opening_balance || 0);
       setOpeningBalance(startingBalance);
