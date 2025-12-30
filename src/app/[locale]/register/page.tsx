@@ -164,18 +164,20 @@ function RegisterForm() {
           }
         }
       } else if (authData.user) {
-        // Email confirmation required - save invite info for later
+        // Email confirmation required - save invite info to database for later
         if (invite) {
-          localStorage.setItem('pendingInvite', JSON.stringify({
-            building_id: invite.building_id,
-            invite_id: invite.id,
-            uses_count: invite.uses_count,
-            default_role: invite.default_role,
-            apartment_number: formData.apartmentNumber,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            email: formData.email,
-          }));
+          // Save to database so it works across browsers/devices
+          await supabase
+            .from('pending_invites')
+            .upsert({
+              user_email: formData.email,
+              building_id: invite.building_id,
+              invite_id: invite.id,
+              apartment_number: formData.apartmentNumber,
+              full_name: formData.fullName,
+              phone: formData.phone || null,
+              default_role: invite.default_role,
+            } as never, { onConflict: 'user_email' });
         }
         toast.info('נשלח אליך מייל לאימות. אנא אמת את המייל והתחבר שוב.');
         router.push('/login');

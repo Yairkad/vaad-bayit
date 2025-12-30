@@ -19,6 +19,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -32,62 +34,89 @@ export default function LoginPage() {
 
       if (error) {
         toast.error(t('auth.invalidCredentials'));
+        setIsLoading(false);
         return;
       }
 
-      // Check for pending invite from registration
-      const pendingInviteStr = localStorage.getItem('pendingInvite');
-      if (pendingInviteStr && authData.user) {
+      // Check for pending invite from registration (in database)
+      if (authData.user?.email) {
         try {
-          const pendingInvite = JSON.parse(pendingInviteStr);
+          type PendingInvite = {
+            id: string;
+            building_id: string;
+            invite_id: string;
+            apartment_number: string;
+            full_name: string;
+            phone: string | null;
+            default_role: string;
+          };
 
-          // Check if user already has membership
-          const { data: existingMember } = await supabase
-            .from('building_members')
-            .select('id')
-            .eq('user_id', authData.user.id)
-            .eq('building_id', pendingInvite.building_id)
-            .single();
+          const { data: pendingInvite } = await supabase
+            .from('pending_invites')
+            .select('*')
+            .eq('user_email', authData.user.email)
+            .single() as { data: PendingInvite | null };
 
-          if (!existingMember) {
-            // Create building membership
-            const { error: memberError } = await supabase
+          if (pendingInvite) {
+            // Check if user already has membership
+            const { data: existingMember } = await supabase
               .from('building_members')
-              .insert({
-                building_id: pendingInvite.building_id,
-                user_id: authData.user.id,
-                full_name: pendingInvite.full_name,
-                apartment_number: pendingInvite.apartment_number,
-                role: pendingInvite.default_role,
-                phone: pendingInvite.phone || null,
-                email: pendingInvite.email,
-              } as never);
+              .select('id')
+              .eq('user_id', authData.user.id)
+              .eq('building_id', pendingInvite.building_id)
+              .single();
 
-            if (!memberError) {
-              // Update invite uses count
-              await supabase
-                .from('building_invites')
-                .update({ uses_count: pendingInvite.uses_count + 1 } as never)
-                .eq('id', pendingInvite.invite_id);
+            if (!existingMember) {
+              // Create building membership
+              const { error: memberError } = await supabase
+                .from('building_members')
+                .insert({
+                  building_id: pendingInvite.building_id,
+                  user_id: authData.user.id,
+                  full_name: pendingInvite.full_name,
+                  apartment_number: pendingInvite.apartment_number,
+                  role: pendingInvite.default_role,
+                  phone: pendingInvite.phone || null,
+                  email: authData.user.email,
+                } as never);
 
-              toast.success('הצטרפת לבניין בהצלחה!');
+              if (!memberError) {
+                // Update invite uses count - fetch current count first
+                const { data: inviteData } = await supabase
+                  .from('building_invites')
+                  .select('uses_count')
+                  .eq('id', pendingInvite.invite_id)
+                  .single() as { data: { uses_count: number } | null };
+
+                if (inviteData) {
+                  await supabase
+                    .from('building_invites')
+                    .update({ uses_count: inviteData.uses_count + 1 } as never)
+                    .eq('id', pendingInvite.invite_id);
+                }
+
+                toast.success('הצטרפת לבניין בהצלחה!');
+              }
             }
-          }
 
-          // Clear the pending invite
-          localStorage.removeItem('pendingInvite');
+            // Delete the pending invite
+            await supabase
+              .from('pending_invites')
+              .delete()
+              .eq('id', pendingInvite.id);
+          }
         } catch (inviteError) {
           console.error('Error processing pending invite:', inviteError);
-          localStorage.removeItem('pendingInvite');
         }
       }
 
-      toast.success(t('common.success'));
+      // Show success and redirect
+      setIsRedirecting(true);
+      toast.success('התחברת בהצלחה! מעביר אותך...');
       router.push('/dashboard');
       router.refresh();
     } catch {
       toast.error(t('common.error'));
-    } finally {
       setIsLoading(false);
     }
   };
@@ -133,11 +162,11 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
+            <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
+              {isLoading || isRedirecting ? (
                 <>
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  {t('common.loading')}
+                  {isRedirecting ? 'מעביר אותך...' : t('common.loading')}
                 </>
               ) : (
                 t('auth.login')

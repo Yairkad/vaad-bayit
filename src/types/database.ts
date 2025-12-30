@@ -387,6 +387,41 @@ export interface Database {
           created_at?: string
         }
       }
+      pending_invites: {
+        Row: {
+          id: string
+          user_email: string
+          building_id: string
+          invite_id: string
+          apartment_number: string
+          full_name: string
+          phone: string | null
+          default_role: MemberRole
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_email: string
+          building_id: string
+          invite_id: string
+          apartment_number: string
+          full_name: string
+          phone?: string | null
+          default_role?: MemberRole
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_email?: string
+          building_id?: string
+          invite_id?: string
+          apartment_number?: string
+          full_name?: string
+          phone?: string | null
+          default_role?: MemberRole
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
