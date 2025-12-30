@@ -13,7 +13,10 @@ export const metadata: Metadata = {
   description: "מערכת חינמית לניהול ועד בית - מעקב תשלומים, ניהול דיירים, הודעות ומסמכים. הכל במקום אחד!",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.svg",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", sizes: "any" },
+    ],
     shortcut: "/icon.svg",
     apple: "/icon.svg",
   },

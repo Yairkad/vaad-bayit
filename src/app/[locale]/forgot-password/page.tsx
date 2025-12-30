@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
       });
 
       if (error) {
@@ -62,8 +62,9 @@ export default function ForgotPasswordPage() {
               </svg>
             </div>
             <CardTitle className="text-2xl">{t('auth.emailSent')}</CardTitle>
-            <CardDescription>
-              נשלח אליך מייל עם קישור לאיפוס הסיסמה. בדוק את תיבת הדואר שלך.
+            <CardDescription className="space-y-2">
+              <span>נשלח אליך מייל עם קישור לאיפוס הסיסמה.</span>
+              <span className="block text-amber-600">💡 לא קיבלת מייל? בדוק בתיקיית הספאם/דואר זבל.</span>
             </CardDescription>
           </CardHeader>
           <CardFooter className="justify-center">
