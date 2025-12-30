@@ -57,8 +57,10 @@ export default function TenantsPage() {
     phone: '',
     email: '',
     role: 'tenant' as 'tenant' | 'committee',
-    payment_method: 'cash' as 'cash' | 'standing_order',
+    payment_method: 'standing_order' as 'cash' | 'standing_order',
     standing_order_active: false,
+    payment_day: '',
+    monthly_amount: '',
     notes: '',
   });
 
@@ -105,8 +107,10 @@ export default function TenantsPage() {
       phone: '',
       email: '',
       role: 'tenant',
-      payment_method: 'cash',
+      payment_method: 'standing_order',
       standing_order_active: false,
+      payment_day: '',
+      monthly_amount: '',
       notes: '',
     });
     setEditingMember(null);
@@ -122,6 +126,8 @@ export default function TenantsPage() {
       role: member.role as 'tenant' | 'committee',
       payment_method: member.payment_method as 'cash' | 'standing_order',
       standing_order_active: member.standing_order_active,
+      payment_day: member.payment_day?.toString() || '',
+      monthly_amount: member.monthly_amount?.toString() || '',
       notes: member.notes || '',
     });
     setIsDialogOpen(true);
@@ -147,6 +153,8 @@ export default function TenantsPage() {
             role: formData.role,
             payment_method: formData.payment_method,
             standing_order_active: formData.standing_order_active,
+            payment_day: formData.payment_day ? parseInt(formData.payment_day) : null,
+            monthly_amount: formData.monthly_amount ? parseFloat(formData.monthly_amount) : null,
             notes: formData.notes || null,
           } as never)
           .eq('id', editingMember.id);
@@ -166,6 +174,8 @@ export default function TenantsPage() {
             role: formData.role,
             payment_method: formData.payment_method,
             standing_order_active: formData.standing_order_active,
+            payment_day: formData.payment_day ? parseInt(formData.payment_day) : null,
+            monthly_amount: formData.monthly_amount ? parseFloat(formData.monthly_amount) : null,
             notes: formData.notes || null,
           } as never);
 
@@ -240,11 +250,11 @@ export default function TenantsPage() {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
+            <DialogHeader className="text-center">
+              <DialogTitle className="text-center">
                 {editingMember ? t('tenants.editTenant') : t('tenants.addTenant')}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-center">
                 {editingMember ? 'עריכת פרטי דייר' : 'הוספת דייר חדש לבניין'}
               </DialogDescription>
             </DialogHeader>
@@ -330,16 +340,44 @@ export default function TenantsPage() {
                 </div>
 
                 {formData.payment_method === 'standing_order' && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="standing_order_active"
-                      checked={formData.standing_order_active}
-                      onChange={(e) => setFormData({ ...formData, standing_order_active: e.target.checked })}
-                      className="h-4 w-4"
-                    />
-                    <Label htmlFor="standing_order_active">{t('tenants.standingOrderActive')}</Label>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="standing_order_active"
+                        checked={formData.standing_order_active}
+                        onChange={(e) => setFormData({ ...formData, standing_order_active: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="standing_order_active">{t('tenants.standingOrderActive')}</Label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="payment_day">יום תשלום בחודש</Label>
+                        <Input
+                          id="payment_day"
+                          type="number"
+                          min="1"
+                          max="31"
+                          value={formData.payment_day}
+                          onChange={(e) => setFormData({ ...formData, payment_day: e.target.value })}
+                          placeholder="1-31"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="monthly_amount">סכום חודשי (₪)</Label>
+                        <Input
+                          id="monthly_amount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.monthly_amount}
+                          onChange={(e) => setFormData({ ...formData, monthly_amount: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div className="space-y-2">

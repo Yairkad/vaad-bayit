@@ -125,7 +125,7 @@ export default async function AccessibilityPage({ params }: Props) {
           </section>
 
           <p className="text-sm text-[#203857]/60 pt-4 border-t border-[#a5d4f0]">
-            עדכון אחרון: דצמבר 2024
+            עדכון אחרון: דצמבר 2025
           </p>
         </div>
       </main>

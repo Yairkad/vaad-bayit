@@ -14,6 +14,7 @@ export type IssuePriority = 'low' | 'normal' | 'high';
 export type DocumentCategory = 'regulation' | 'insurance' | 'protocol' | 'standing_order' | 'other';
 export type MessageType = 'announcement' | 'meeting' | 'vote';
 export type ResponseType = 'yes' | 'no';
+export type ExpenseRecurrence = 'one_time' | 'monthly' | 'bi_monthly';
 
 export interface Database {
   public: {
@@ -84,6 +85,8 @@ export interface Database {
           payment_method: PaymentMethod
           standing_order_active: boolean
           standing_order_file: string | null
+          payment_day: number | null
+          monthly_amount: number | null
           phone: string | null
           email: string | null
           notes: string | null
@@ -99,6 +102,8 @@ export interface Database {
           payment_method?: PaymentMethod
           standing_order_active?: boolean
           standing_order_file?: string | null
+          payment_day?: number | null
+          monthly_amount?: number | null
           phone?: string | null
           email?: string | null
           notes?: string | null
@@ -114,6 +119,8 @@ export interface Database {
           payment_method?: PaymentMethod
           standing_order_active?: boolean
           standing_order_file?: string | null
+          payment_day?: number | null
+          monthly_amount?: number | null
           phone?: string | null
           email?: string | null
           notes?: string | null
@@ -167,6 +174,8 @@ export interface Database {
           description: string | null
           expense_date: string
           receipt_file: string | null
+          recurrence: ExpenseRecurrence
+          is_active: boolean
           created_by: string | null
           created_at: string
         }
@@ -178,6 +187,8 @@ export interface Database {
           description?: string | null
           expense_date: string
           receipt_file?: string | null
+          recurrence?: ExpenseRecurrence
+          is_active?: boolean
           created_by?: string | null
           created_at?: string
         }
@@ -189,6 +200,8 @@ export interface Database {
           description?: string | null
           expense_date?: string
           receipt_file?: string | null
+          recurrence?: ExpenseRecurrence
+          is_active?: boolean
           created_by?: string | null
           created_at?: string
         }

@@ -31,8 +31,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Loader2, Building2, Trash2, Pencil, UserPlus } from 'lucide-react';
-import type { Building, Profile, BuildingMember } from '@/types/database';
+import { Plus, Loader2, Building2, Trash2, Pencil, UserPlus, Link2, Copy, Check } from 'lucide-react';
+import type { Building, Profile, BuildingMember, BuildingInvite } from '@/types/database';
 
 type BuildingWithCreator = Building & {
   profiles?: Profile;
@@ -45,9 +45,12 @@ export default function AdminBuildingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [copiedInvite, setCopiedInvite] = useState(false);
 
   const [formData, setFormData] = useState({
     address: '',
@@ -334,6 +337,67 @@ export default function AdminBuildingsPage() {
     loadData();
   };
 
+  const generateInviteCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  const openInviteDialog = async (building: Building) => {
+    setSelectedBuilding(building);
+    setInviteLink(null);
+    setCopiedInvite(false);
+    setIsInviteDialogOpen(true);
+  };
+
+  const createCommitteeInvite = async () => {
+    if (!selectedBuilding) return;
+
+    setIsSaving(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const code = generateInviteCode();
+
+    const { error } = await supabase
+      .from('building_invites')
+      .insert({
+        building_id: selectedBuilding.id,
+        code,
+        default_role: 'committee',
+        max_uses: 1,
+        is_active: true,
+        created_by: user?.id,
+      } as never);
+
+    if (error) {
+      console.error('Error creating invite:', error);
+      toast.error('שגיאה ביצירת קישור ההזמנה');
+    } else {
+      const link = `${window.location.origin}/he/register?invite=${code}`;
+      setInviteLink(link);
+      toast.success('קישור ההזמנה נוצר בהצלחה');
+    }
+
+    setIsSaving(false);
+  };
+
+  const copyInviteLink = async () => {
+    if (!inviteLink) return;
+
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopiedInvite(true);
+      toast.success('הקישור הועתק');
+      setTimeout(() => setCopiedInvite(false), 2000);
+    } catch {
+      toast.error('שגיאה בהעתקה');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -513,6 +577,79 @@ export default function AdminBuildingsPage() {
         </Dialog>
       </div>
 
+      {/* Committee Invite Dialog */}
+      <Dialog open={isInviteDialogOpen} onOpenChange={(open) => {
+        setIsInviteDialogOpen(open);
+        if (!open) {
+          setInviteLink(null);
+          setCopiedInvite(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>קישור הזמנה לוועד</DialogTitle>
+            <DialogDescription>
+              {selectedBuilding?.address}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {!inviteLink ? (
+              <div className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  צור קישור הזמנה חד-פעמי לוועד בית חדש.
+                  <br />
+                  המשתמש שיירשם דרך הקישור יקבל הרשאות ועד.
+                </p>
+                <Button onClick={createCommitteeInvite} disabled={isSaving}>
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Link2 className="h-4 w-4 ml-2" />
+                      צור קישור הזמנה
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <Label>קישור ההזמנה:</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={inviteLink}
+                    readOnly
+                    dir="ltr"
+                    className="text-xs"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={copyInviteLink}
+                    className="shrink-0"
+                  >
+                    {copiedInvite ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  הקישור תקף לשימוש חד-פעמי בלבד
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+              סגור
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Add User Dialog */}
       <Dialog open={isUserDialogOpen} onOpenChange={(open) => {
         setIsUserDialogOpen(open);
@@ -656,6 +793,14 @@ export default function AdminBuildingsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => openInviteDialog(building)}
+                    title="קישור הזמנה לוועד"
+                  >
+                    <Link2 className="h-4 w-4 text-green-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => deleteBuilding(building)}
                     title="מחק"
                   >
@@ -717,6 +862,14 @@ export default function AdminBuildingsPage() {
                         title="הוסף משתמש"
                       >
                         <UserPlus className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openInviteDialog(building)}
+                        title="קישור הזמנה לוועד"
+                      >
+                        <Link2 className="h-4 w-4 text-green-600" />
                       </Button>
                       <Button
                         variant="ghost"

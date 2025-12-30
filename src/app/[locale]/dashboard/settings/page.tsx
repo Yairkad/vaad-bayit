@@ -8,21 +8,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Building2, Phone, Mail } from 'lucide-react';
+import { Loader2, User, Key, ArrowRight, LogOut } from 'lucide-react';
+import { useRouter } from '@/i18n/navigation';
 import type { Profile, BuildingMember, Building } from '@/types/database';
 
 type MemberWithBuilding = BuildingMember & { buildings: Building | null };
 
 export default function SettingsPage() {
   const t = useTranslations();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [membership, setMembership] = useState<MemberWithBuilding | null>(null);
+  const [userEmail, setUserEmail] = useState('');
 
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   useEffect(() => {
@@ -34,6 +44,8 @@ export default function SettingsPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return;
+
+    setUserEmail(user.email || '');
 
     // Load profile
     const { data: profileData } = await supabase
@@ -72,6 +84,7 @@ export default function SettingsPage() {
     const supabase = createClient();
 
     try {
+      // Update profile
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -81,6 +94,18 @@ export default function SettingsPage() {
         .eq('id', profile.id);
 
       if (error) throw error;
+
+      // Also update name in building_members if membership exists
+      if (membership) {
+        await supabase
+          .from('building_members')
+          .update({
+            full_name: formData.full_name,
+            phone: formData.phone || null,
+          } as never)
+          .eq('user_id', profile.id);
+      }
+
       toast.success('הפרופיל עודכן בהצלחה');
       loadData();
     } catch (error) {
@@ -91,13 +116,62 @@ export default function SettingsPage() {
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin': return 'מנהל מערכת';
-      case 'committee': return 'ועד בית';
-      case 'tenant': return 'דייר';
-      default: return role;
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!passwordData.currentPassword) {
+      toast.error('יש להזין את הסיסמה הנוכחית');
+      return;
     }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('הסיסמאות לא תואמות');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('הסיסמה חייבת להכיל לפחות 6 תווים');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    const supabase = createClient();
+
+    try {
+      // First verify current password by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: passwordData.currentPassword,
+      });
+
+      if (signInError) {
+        toast.error('הסיסמה הנוכחית שגויה');
+        setIsChangingPassword(false);
+        return;
+      }
+
+      // Now update the password
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (error) throw error;
+
+      toast.success('הסיסמה שונתה בהצלחה');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      console.error(error);
+      toast.error('שגיאה בשינוי הסיסמה');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
   };
 
   if (isLoading) {
@@ -110,9 +184,18 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t('nav.settings')}</h1>
-        <p className="text-muted-foreground">ניהול הפרופיל והגדרות החשבון</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">{t('nav.settings')}</h1>
+          <p className="text-muted-foreground">ניהול הפרופיל והגדרות החשבון</p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => router.push('/dashboard')}
+        >
+          <ArrowRight className="h-4 w-4 ml-2" />
+          חזרה
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -128,6 +211,17 @@ export default function SettingsPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="email">אימייל</Label>
+                <Input
+                  id="email"
+                  value={userEmail}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">לא ניתן לשנות את כתובת המייל</p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="full_name">{t('auth.fullName')}</Label>
                 <Input
                   id="full_name"
@@ -138,15 +232,6 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">{t('auth.email')}</Label>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{profile?.id}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">לא ניתן לשנות את כתובת המייל</p>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="phone">{t('auth.phone')}</Label>
                 <Input
                   id="phone"
@@ -154,8 +239,16 @@ export default function SettingsPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="050-0000000"
+                  dir="ltr"
                 />
               </div>
+
+              {membership && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label className="text-muted-foreground">דירה</Label>
+                  <p className="font-medium">{membership.apartment_number}</p>
+                </div>
+              )}
 
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? (
@@ -168,76 +261,80 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Account Info Card */}
+        {/* Password Change Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              פרטי חשבון
+              <Key className="h-5 w-5" />
+              שינוי סיסמה
             </CardTitle>
-            <CardDescription>מידע על החשבון והבניין</CardDescription>
+            <CardDescription>עדכון סיסמת הכניסה</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <Label className="text-muted-foreground">תפקיד במערכת</Label>
-              <p className="font-medium">{getRoleLabel(profile?.role || 'tenant')}</p>
-            </div>
-
-            {membership && (
-              <>
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">בניין</Label>
-                  <p className="font-medium">{membership.buildings?.name || '-'}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">כתובת</Label>
-                  <p className="font-medium">{membership.buildings?.address || '-'}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">דירה</Label>
-                  <p className="font-medium">{membership.apartment_number}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">תפקיד בבניין</Label>
-                  <p className="font-medium">{membership.role === 'committee' ? 'ועד בית' : 'דייר'}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">אופן תשלום</Label>
-                  <p className="font-medium">
-                    {membership.payment_method === 'standing_order' ? 'הוראת קבע' : 'מזומן'}
-                    {membership.standing_order_active && ' (פעיל)'}
-                  </p>
-                </div>
-              </>
-            )}
-
-            {!membership && (
-              <p className="text-muted-foreground text-sm">
-                אינך משויך לאף בניין כרגע
-              </p>
-            )}
-
-            <div className="pt-4 border-t">
-              <div className="space-y-1">
-                <Label className="text-muted-foreground">נרשם בתאריך</Label>
-                <p className="font-medium">
-                  {profile?.created_at
-                    ? new Date(profile.created_at).toLocaleDateString('he-IL', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })
-                    : '-'}
-                </p>
+          <CardContent>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">סיסמה נוכחית</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  required
+                />
               </div>
-            </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">סיסמה חדשה</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">אישור סיסמה</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              <Button type="submit" disabled={isChangingPassword}>
+                {isChangingPassword ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'שנה סיסמה'
+                )}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
+
+      {/* Logout Card */}
+      <Card className="border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-600">
+            <LogOut className="h-5 w-5" />
+            התנתקות
+          </CardTitle>
+          <CardDescription>התנתקות מהמערכת</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 ml-2" />
+            התנתק מהמערכת
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

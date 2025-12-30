@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, User, Building2, Plus, Trash2, X } from 'lucide-react';
+import { Loader2, User, Building2, Plus, Trash2, X, Search } from 'lucide-react';
 import type { Profile, Building, BuildingMember } from '@/types/database';
 
 type ProfileWithMembership = Profile & {
@@ -48,6 +48,12 @@ export default function AdminUsersPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Search and filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterBuilding, setFilterBuilding] = useState<string>('all');
+  const [filterCity, setFilterCity] = useState<string>('all');
+  const [filterRole, setFilterRole] = useState<string>('all');
 
   // Form state for editing user
   const [newMembership, setNewMembership] = useState({
@@ -247,6 +253,47 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Get unique cities for filter
+  const cities = [...new Set(buildings.map(b => b.city).filter(Boolean))] as string[];
+
+  // Filter users
+  const filteredUsers = users.filter(user => {
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesName = user.full_name?.toLowerCase().includes(query);
+      const matchesPhone = user.phone?.includes(query);
+      const matchesBuilding = user.building_members?.some(m =>
+        m.buildings?.address?.toLowerCase().includes(query)
+      );
+      if (!matchesName && !matchesPhone && !matchesBuilding) return false;
+    }
+
+    // Building filter
+    if (filterBuilding !== 'all') {
+      const hasBuilding = user.building_members?.some(m => m.building_id === filterBuilding);
+      if (!hasBuilding) return false;
+    }
+
+    // City filter
+    if (filterCity !== 'all') {
+      const hasCity = user.building_members?.some(m => m.buildings?.city === filterCity);
+      if (!hasCity) return false;
+    }
+
+    // Role filter
+    if (filterRole !== 'all') {
+      const displayRole = getDisplayRole(user);
+      if (filterRole === 'unassigned') {
+        if (user.building_members && user.building_members.length > 0) return false;
+      } else if (displayRole !== filterRole) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
   const stats = {
     total: users.length,
     withBuilding: users.filter(u => u.building_members && u.building_members.length > 0).length,
@@ -266,6 +313,82 @@ export default function AdminUsersPage() {
       <div>
         <h1 className="text-xl sm:text-3xl font-bold">ניהול משתמשים</h1>
         <p className="text-sm sm:text-base text-muted-foreground">צפייה והגדרת הרשאות למשתמשים במערכת</p>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="חיפוש לפי שם, טלפון או בניין..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pr-9"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Select value={filterBuilding} onValueChange={setFilterBuilding}>
+            <SelectTrigger className="w-[140px] sm:w-[180px]">
+              <SelectValue placeholder="בניין" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל הבניינים</SelectItem>
+              {buildings.map((building) => (
+                <SelectItem key={building.id} value={building.id}>
+                  {building.address}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterCity} onValueChange={setFilterCity}>
+            <SelectTrigger className="w-[120px] sm:w-[150px]">
+              <SelectValue placeholder="עיר" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל הערים</SelectItem>
+              {cities.map((city) => (
+                <SelectItem key={city} value={city}>
+                  {city}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterRole} onValueChange={setFilterRole}>
+            <SelectTrigger className="w-[120px] sm:w-[140px]">
+              <SelectValue placeholder="תפקיד" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל התפקידים</SelectItem>
+              <SelectItem value="committee">ועד בית</SelectItem>
+              <SelectItem value="tenant">דייר</SelectItem>
+              <SelectItem value="unassigned">לא משויך</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(searchQuery || filterBuilding !== 'all' || filterCity !== 'all' || filterRole !== 'all') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery('');
+                setFilterBuilding('all');
+                setFilterCity('all');
+                setFilterRole('all');
+              }}
+            >
+              נקה פילטרים
+            </Button>
+          )}
+        </div>
+
+        {filteredUsers.length !== users.length && (
+          <p className="text-sm text-muted-foreground">
+            מציג {filteredUsers.length} מתוך {users.length} משתמשים
+          </p>
+        )}
       </div>
 
       {/* Stats */}
@@ -313,7 +436,7 @@ export default function AdminUsersPage() {
 
       {/* Mobile Cards View */}
       <div className="lg:hidden space-y-3">
-        {users.map((user) => {
+        {filteredUsers.map((user) => {
           const displayRole = getDisplayRole(user);
           const memberships = user.building_members || [];
           return (
@@ -349,10 +472,10 @@ export default function AdminUsersPage() {
             </Card>
           );
         })}
-        {users.length === 0 && (
+        {filteredUsers.length === 0 && (
           <Card>
             <CardContent className="p-6 text-center text-muted-foreground">
-              אין משתמשים
+              {users.length === 0 ? 'אין משתמשים' : 'לא נמצאו משתמשים מתאימים'}
             </CardContent>
           </Card>
         )}
@@ -375,7 +498,7 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => {
+              {filteredUsers.map((user) => {
                 const displayRole = getDisplayRole(user);
                 const memberships = user.building_members || [];
                 return (
@@ -406,10 +529,10 @@ export default function AdminUsersPage() {
                   </TableRow>
                 );
               })}
-              {users.length === 0 && (
+              {filteredUsers.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    אין משתמשים
+                    {users.length === 0 ? 'אין משתמשים' : 'לא נמצאו משתמשים מתאימים'}
                   </TableCell>
                 </TableRow>
               )}
