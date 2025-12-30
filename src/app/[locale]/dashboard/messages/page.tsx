@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -29,6 +30,7 @@ type MessageWithResponses = Message & {
 
 export default function MessagesPage() {
   const t = useTranslations();
+  const confirm = useConfirm();
   const [messages, setMessages] = useState<MessageWithResponses[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [building, setBuilding] = useState<Building | null>(null);
@@ -150,7 +152,14 @@ export default function MessagesPage() {
   };
 
   const handleDelete = async (message: Message) => {
-    if (!confirm('האם למחוק את ההודעה?')) return;
+    const confirmed = await confirm({
+      title: 'מחיקת הודעה',
+      description: 'האם למחוק את ההודעה?',
+      confirmText: 'מחק',
+      cancelText: 'ביטול',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
 
     const supabase = createClient();
 

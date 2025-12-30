@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -42,6 +43,7 @@ type InviteWithBuilding = BuildingInvite & {
 
 export default function InvitesPage() {
   const t = useTranslations();
+  const confirm = useConfirm();
   const [invites, setInvites] = useState<InviteWithBuilding[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [building, setBuilding] = useState<Building | null>(null);
@@ -145,7 +147,14 @@ export default function InvitesPage() {
   };
 
   const deleteInvite = async (invite: BuildingInvite) => {
-    if (!confirm('האם למחוק את קישור ההזמנה?')) return;
+    const confirmed = await confirm({
+      title: 'מחיקת קישור הזמנה',
+      description: 'האם למחוק את קישור ההזמנה?',
+      confirmText: 'מחק',
+      cancelText: 'ביטול',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
 
     const supabase = createClient();
     const { error } = await supabase

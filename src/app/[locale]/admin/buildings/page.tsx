@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -40,6 +41,7 @@ type BuildingWithCreator = Building & {
 };
 
 export default function AdminBuildingsPage() {
+  const confirm = useConfirm();
   const [buildings, setBuildings] = useState<BuildingWithCreator[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -319,7 +321,14 @@ export default function AdminBuildingsPage() {
   };
 
   const deleteBuilding = async (building: Building) => {
-    if (!confirm('האם למחוק את הבניין? פעולה זו תמחק גם את כל הדיירים והנתונים הקשורים.')) return;
+    const confirmed = await confirm({
+      title: 'מחיקת בניין',
+      description: 'האם למחוק את הבניין? פעולה זו תמחק גם את כל הדיירים והנתונים הקשורים.',
+      confirmText: 'מחק',
+      cancelText: 'ביטול',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
 
     const supabase = createClient();
 

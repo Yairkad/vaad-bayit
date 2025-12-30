@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -44,6 +45,7 @@ type MemberWithProfile = BuildingMember & {
 
 export default function TenantsPage() {
   const t = useTranslations();
+  const confirm = useConfirm();
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [buildingName, setBuildingName] = useState<string>('');
@@ -196,7 +198,14 @@ export default function TenantsPage() {
   };
 
   const handleDelete = async (member: BuildingMember) => {
-    if (!confirm(`האם למחוק את ${member.full_name}?`)) return;
+    const confirmed = await confirm({
+      title: 'מחיקת דייר',
+      description: `האם למחוק את ${member.full_name}?`,
+      confirmText: 'מחק',
+      cancelText: 'ביטול',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
 
     const supabase = createClient();
     const { error } = await supabase

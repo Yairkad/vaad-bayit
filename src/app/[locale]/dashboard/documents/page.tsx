@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -57,6 +58,7 @@ const CATEGORIES = [
 
 export default function DocumentsPage() {
   const t = useTranslations();
+  const confirm = useConfirm();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [building, setBuilding] = useState<Building | null>(null);
@@ -158,7 +160,14 @@ export default function DocumentsPage() {
   };
 
   const handleDelete = async (doc: Document) => {
-    if (!confirm('האם למחוק את המסמך?')) return;
+    const confirmed = await confirm({
+      title: 'מחיקת מסמך',
+      description: 'האם למחוק את המסמך?',
+      confirmText: 'מחק',
+      cancelText: 'ביטול',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
 
     const supabase = createClient();
 

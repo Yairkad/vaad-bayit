@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default function TenantDocumentsPage() {
+  const confirm = useConfirm();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [myDocuments, setMyDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -165,7 +167,14 @@ export default function TenantDocumentsPage() {
   };
 
   const handleDelete = async (doc: Document) => {
-    if (!confirm('האם למחוק את המסמך?')) return;
+    const confirmed = await confirm({
+      title: 'מחיקת מסמך',
+      description: 'האם למחוק את המסמך?',
+      confirmText: 'מחק',
+      cancelText: 'ביטול',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
 
     const supabase = createClient();
 

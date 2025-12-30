@@ -2,17 +2,21 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
-// Create admin client with service role key
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) {
+    throw new Error('Missing Supabase configuration: NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  return createClient(url, serviceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
-);
+  });
+}
 
 export async function DELETE(request: Request) {
   try {
@@ -49,17 +53,50 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
     }
 
-    // Delete building memberships first (due to foreign key)
-    await supabaseAdmin
+    // Get admin client
+    let supabaseAdmin;
+    try {
+      supabaseAdmin = getSupabaseAdmin();
+    } catch (configError) {
+      console.error('Supabase admin config error:', configError);
+      return NextResponse.json(
+        { error: 'Server configuration error - missing service role key' },
+        { status: 500 }
+      );
+    }
+
+    // Delete related data first (due to foreign keys)
+    // Delete message responses
+    const { error: responsesError } = await supabaseAdmin
+      .from('message_responses')
+      .delete()
+      .eq('member_id', userIdToDelete);
+    if (responsesError) console.log('Note: message_responses deletion:', responsesError.message);
+
+    // Delete pending invites
+    const { error: pendingError } = await supabaseAdmin
+      .from('pending_invites')
+      .delete()
+      .eq('user_email', (await supabaseAdmin.auth.admin.getUserById(userIdToDelete)).data.user?.email || '');
+    if (pendingError) console.log('Note: pending_invites deletion:', pendingError.message);
+
+    // Delete building memberships
+    const { error: membersError } = await supabaseAdmin
       .from('building_members')
       .delete()
       .eq('user_id', userIdToDelete);
+    if (membersError) {
+      console.error('Error deleting building_members:', membersError);
+    }
 
     // Delete profile
-    await supabaseAdmin
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
       .eq('id', userIdToDelete);
+    if (profileError) {
+      console.error('Error deleting profile:', profileError);
+    }
 
     // Delete auth user
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete);
@@ -79,8 +116,9 @@ export async function DELETE(request: Request) {
 
   } catch (error) {
     console.error('API error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error: ' + message },
       { status: 500 }
     );
   }

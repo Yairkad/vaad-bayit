@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -56,6 +57,7 @@ const RECURRENCE_OPTIONS = [
 
 export default function ExpensesPage() {
   const t = useTranslations();
+  const confirm = useConfirm();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [building, setBuilding] = useState<Building | null>(null);
@@ -234,7 +236,14 @@ export default function ExpensesPage() {
   };
 
   const handleDelete = async (expense: Expense) => {
-    if (!confirm('האם למחוק את ההוצאה?')) return;
+    const confirmed = await confirm({
+      title: 'מחיקת הוצאה',
+      description: 'האם למחוק את ההוצאה?',
+      confirmText: 'מחק',
+      cancelText: 'ביטול',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
 
     const supabase = createClient();
     const { error } = await supabase

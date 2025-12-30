@@ -5,12 +5,14 @@ import { useRouter } from '@/i18n/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { UnassociatedUserBlock } from '@/components/UnassociatedUserBlock';
 import { Loader2 } from 'lucide-react';
 
 interface UserData {
   fullName: string;
   buildingName: string | null;
   role: 'admin' | 'committee' | 'tenant';
+  isAssociated: boolean;
 }
 
 export default function TenantLayout({
@@ -68,6 +70,7 @@ export default function TenantLayout({
       fullName: profile?.full_name || user.email || 'משתמש',
       buildingName: building?.address || building?.name || null,
       role: 'tenant',
+      isAssociated: !!membership,
     });
 
     setIsLoading(false);
@@ -79,6 +82,11 @@ export default function TenantLayout({
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
+  }
+
+  // Block unassociated users
+  if (!userData?.isAssociated) {
+    return <UnassociatedUserBlock />;
   }
 
   return (

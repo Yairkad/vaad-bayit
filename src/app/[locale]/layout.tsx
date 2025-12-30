@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -80,9 +81,11 @@ export default async function LocaleLayout({ children, params }: Props) {
           דלג לתוכן הראשי
         </a>
         <NextIntlClientProvider messages={messages}>
-          {children}
-          <Toaster />
-          <OfflineIndicator />
+          <ConfirmProvider>
+            {children}
+            <Toaster />
+            <OfflineIndicator />
+          </ConfirmProvider>
         </NextIntlClientProvider>
       </body>
     </html>
