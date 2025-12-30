@@ -94,6 +94,33 @@ export async function DELETE(request: Request) {
       if (pendingError) console.log('Note: pending_invites deletion:', pendingError.message);
     }
 
+    // Clear foreign key references in tables that reference profiles
+    // These don't have ON DELETE CASCADE, so we need to nullify them
+    await supabaseAdmin
+      .from('buildings')
+      .update({ created_by: null })
+      .eq('created_by', userIdToDelete);
+
+    await supabaseAdmin
+      .from('expenses')
+      .update({ created_by: null })
+      .eq('created_by', userIdToDelete);
+
+    await supabaseAdmin
+      .from('messages')
+      .update({ created_by: null })
+      .eq('created_by', userIdToDelete);
+
+    await supabaseAdmin
+      .from('documents')
+      .update({ uploaded_by: null })
+      .eq('uploaded_by', userIdToDelete);
+
+    await supabaseAdmin
+      .from('building_invites')
+      .update({ created_by: null })
+      .eq('created_by', userIdToDelete);
+
     // Delete building memberships
     const { error: membersError } = await supabaseAdmin
       .from('building_members')
@@ -103,16 +130,20 @@ export async function DELETE(request: Request) {
       console.error('Error deleting building_members:', membersError);
     }
 
-    // Delete profile
+    // Delete profile - this should now work since all FK references are cleared
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
       .eq('id', userIdToDelete);
     if (profileError) {
       console.error('Error deleting profile:', profileError);
+      return NextResponse.json(
+        { error: 'Failed to delete profile: ' + profileError.message },
+        { status: 500 }
+      );
     }
 
-    // Delete auth user
+    // Delete auth user - profile has CASCADE on auth.users, but we already deleted it
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userIdToDelete);
 
     if (deleteError) {
