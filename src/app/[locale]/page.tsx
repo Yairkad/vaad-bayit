@@ -1,24 +1,16 @@
+'use client';
+
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users, CreditCard, FileText } from 'lucide-react';
 import { ContactDialog } from '@/components/ContactDialog';
 
-type Props = {
-  params: Promise<{ locale: string }>;
-};
-
-export default async function HomePage({ params }: Props) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-
-  return <HomeContent />;
-}
-
-function HomeContent() {
+export default function HomePage() {
   const t = useTranslations();
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   const features = [
     {
@@ -126,6 +118,7 @@ function HomeContent() {
             השאירו פרטים ונחזור אליכם עם מידע על הוספת הבניין שלכם למערכת
           </p>
           <ContactDialog />
+          <ContactDialog open={isContactOpen} onOpenChange={setIsContactOpen} showTrigger={false} />
         </div>
       </section>
 
@@ -145,9 +138,12 @@ function HomeContent() {
               נגישות
             </Link>
             <span>|</span>
-            <a href="#contact" className="hover:text-[#203857] hover:underline">
+            <button
+              onClick={() => setIsContactOpen(true)}
+              className="hover:text-[#203857] hover:underline"
+            >
               צור קשר
-            </a>
+            </button>
           </div>
           <p className="text-sm">© {new Date().getFullYear()} כל הזכויות שמורות למערכת ועד בית.</p>
         </div>

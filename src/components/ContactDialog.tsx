@@ -17,8 +17,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Loader2, Send, CheckCircle, MessageSquare } from 'lucide-react';
 
-export function ContactDialog() {
-  const [isOpen, setIsOpen] = useState(false);
+interface ContactDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showTrigger?: boolean;
+}
+
+export function ContactDialog({ open, onOpenChange, showTrigger = true }: ContactDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isOpen = open !== undefined ? open : internalOpen;
+  const setIsOpen = onOpenChange || setInternalOpen;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -83,12 +92,14 @@ export function ContactDialog() {
       setIsOpen(open);
       if (!open) resetForm();
     }}>
-      <DialogTrigger asChild>
-        <Button size="lg" variant="outline" className="text-lg px-8">
-          <MessageSquare className="h-5 w-5 ml-2" />
-          רוצים גם? השאירו פרטים
-        </Button>
-      </DialogTrigger>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button size="lg" variant="outline" className="text-lg px-8">
+            <MessageSquare className="h-5 w-5 ml-2" />
+            רוצים גם? השאירו פרטים
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         {isSubmitted ? (
           <div className="py-8 text-center">
