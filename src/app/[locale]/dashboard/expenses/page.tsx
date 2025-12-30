@@ -149,14 +149,14 @@ export default function ExpensesPage() {
       .order('expense_date', { ascending: false });
 
     // Filter bi-monthly expenses to show only in applicable months
-    const filteredBiMonthly = (biMonthlyExpenses || []).filter(expense => {
+    const filteredBiMonthly = ((biMonthlyExpenses || []) as Expense[]).filter(expense => {
       const expenseDate = new Date(expense.expense_date);
       const monthsDiff = (selectedMonthDate.getFullYear() - expenseDate.getFullYear()) * 12 +
                          (selectedMonthDate.getMonth() - expenseDate.getMonth());
       return monthsDiff >= 0 && monthsDiff % 2 === 0; // Show every other month starting from expense date
     });
 
-    setExpenses([...(monthlyExpenses || []), ...(recurringExpenses || []), ...filteredBiMonthly]);
+    setExpenses([...((monthlyExpenses || []) as Expense[]), ...((recurringExpenses || []) as Expense[]), ...filteredBiMonthly]);
   };
 
   const resetForm = () => {
