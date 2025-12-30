@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, CreditCard, CalendarClock } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Calendar, AlertCircle } from 'lucide-react';
 
 interface Payment {
   id: string;
@@ -73,38 +72,48 @@ export default function TenantPaymentsPage() {
     return date.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
   };
 
-  const totalDue = payments.filter(p => !p.is_paid).reduce((sum, p) => sum + Number(p.amount), 0);
-  const totalPaid = payments.filter(p => p.is_paid).reduce((sum, p) => sum + Number(p.amount), 0);
-
-  // Get next standing order charge info
-  const getStandingOrderInfo = () => {
-    if (!memberInfo || memberInfo.payment_method !== 'standing_order' || !memberInfo.standing_order_active || !memberInfo.payment_day) {
-      return null;
-    }
-
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const paymentDay = memberInfo.payment_day;
-
-    let chargeDate = new Date(currentYear, currentMonth, paymentDay);
-
-    // If the payment day has passed this month, show next month
-    if (today.getDate() > paymentDay) {
-      chargeDate = new Date(currentYear, currentMonth + 1, paymentDay);
-    }
-
-    const isPast = today > chargeDate;
-    const formattedDate = chargeDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' });
-
-    return {
-      date: formattedDate,
-      amount: memberInfo.monthly_amount,
-      isPast,
-    };
+  const formatShortMonth = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('he-IL', { month: 'short', year: '2-digit' });
   };
 
-  const standingOrderInfo = getStandingOrderInfo();
+  const totalDue = payments.filter(p => !p.is_paid).reduce((sum, p) => sum + Number(p.amount), 0);
+
+  // Get next payment info
+  const getNextPaymentInfo = () => {
+    // Find the next unpaid payment
+    const unpaidPayments = payments.filter(p => !p.is_paid).sort((a, b) =>
+      new Date(a.month).getTime() - new Date(b.month).getTime()
+    );
+
+    if (unpaidPayments.length > 0) {
+      return {
+        month: formatMonth(unpaidPayments[0].month),
+        amount: unpaidPayments[0].amount,
+        isOverdue: new Date(unpaidPayments[0].month) < new Date(),
+      };
+    }
+
+    // If all paid, show next expected payment based on standing order
+    if (memberInfo?.standing_order_active && memberInfo.payment_day && memberInfo.monthly_amount) {
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+
+      let nextMonth = new Date(currentYear, currentMonth + 1, 1);
+
+      return {
+        month: nextMonth.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' }),
+        amount: memberInfo.monthly_amount,
+        chargeDate: memberInfo.payment_day,
+        isStandingOrder: true,
+      };
+    }
+
+    return null;
+  };
+
+  const nextPayment = getNextPaymentInfo();
 
   if (isLoading) {
     return (
@@ -121,46 +130,58 @@ export default function TenantPaymentsPage() {
         <p className="text-sm sm:text-base text-muted-foreground">צפייה בהיסטוריית התשלומים</p>
       </div>
 
-      {/* Standing Order Info */}
-      {standingOrderInfo && (
-        <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
-                <CalendarClock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                  {standingOrderInfo.isPast ? 'חויב' : 'יחויב'} בתאריך {standingOrderInfo.date}
-                </p>
-                <p className="text-lg font-bold text-blue-800 dark:text-blue-200">
-                  הו״ק בסכום ₪{standingOrderInfo.amount?.toLocaleString() || '-'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">לתשלום</p>
-            <p className="text-2xl font-bold text-red-600">₪{totalDue.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">שולם</p>
-            <p className="text-2xl font-bold text-green-600">₪{totalPaid.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Payments List */}
+      {/* Next Payment Card */}
       <Card>
-        <CardHeader>
+        <CardContent className="p-4 sm:p-6">
+          {nextPayment ? (
+            <div className="space-y-4">
+              {/* Next Payment Info */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-full ${nextPayment.isOverdue ? 'bg-red-100 dark:bg-red-900' : 'bg-blue-100 dark:bg-blue-900'}`}>
+                    <Calendar className={`h-5 w-5 ${nextPayment.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {nextPayment.isOverdue ? 'תשלום באיחור' : 'התשלום הבא'}
+                    </p>
+                    <p className="font-semibold">{nextPayment.month}</p>
+                    {nextPayment.isStandingOrder && nextPayment.chargeDate && (
+                      <p className="text-xs text-muted-foreground">
+                        יחויב בתאריך {nextPayment.chargeDate} לחודש (הו״ק)
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-left">
+                  <p className="text-2xl font-bold">₪{Number(nextPayment.amount).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Debt Warning */}
+              {totalDue > 0 && (
+                <div className="flex items-center justify-between pt-3 border-t border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 px-4 sm:px-6 py-3 rounded-b-lg">
+                  <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">יתרת חוב</span>
+                  </div>
+                  <span className="text-lg font-bold text-red-600 dark:text-red-400">₪{totalDue.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+              <p className="font-medium text-green-700 dark:text-green-400">כל התשלומים שולמו!</p>
+              <p className="text-sm text-muted-foreground">אין תשלומים ממתינים</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Payments History Table */}
+      <Card>
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg">היסטוריית תשלומים</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -169,32 +190,47 @@ export default function TenantPaymentsPage() {
               אין תשלומים להצגה
             </div>
           ) : (
-            <div className="divide-y">
-              {payments.map((payment) => (
-                <div key={payment.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {payment.is_paid ? (
-                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-600 shrink-0" />
-                    )}
-                    <div>
-                      <p className="font-medium">{formatMonth(payment.month)}</p>
-                      {payment.paid_at && (
-                        <p className="text-xs text-muted-foreground">
-                          שולם ב-{new Date(payment.paid_at).toLocaleDateString('he-IL')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-left">
-                    <p className="font-bold">₪{Number(payment.amount).toLocaleString()}</p>
-                    <Badge variant={payment.is_paid ? 'default' : 'destructive'} className="text-xs">
-                      {payment.is_paid ? 'שולם' : 'לתשלום'}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-right px-4 py-2 font-medium">חודש</th>
+                    <th className="text-right px-4 py-2 font-medium">סכום</th>
+                    <th className="text-center px-4 py-2 font-medium">סטטוס</th>
+                    <th className="text-right px-4 py-2 font-medium hidden sm:table-cell">תאריך תשלום</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {payments.map((payment) => (
+                    <tr key={payment.id} className={!payment.is_paid ? 'bg-red-50/50 dark:bg-red-950/20' : ''}>
+                      <td className="px-4 py-3">
+                        <span className="hidden sm:inline">{formatMonth(payment.month)}</span>
+                        <span className="sm:hidden">{formatShortMonth(payment.month)}</span>
+                      </td>
+                      <td className="px-4 py-3 font-medium">₪{Number(payment.amount).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-center">
+                        {payment.is_paid ? (
+                          <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="hidden sm:inline">שולם</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400">
+                            <XCircle className="h-4 w-4" />
+                            <span className="hidden sm:inline">לתשלום</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
+                        {payment.paid_at
+                          ? new Date(payment.paid_at).toLocaleDateString('he-IL')
+                          : '-'
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
