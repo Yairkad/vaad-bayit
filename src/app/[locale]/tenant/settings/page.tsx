@@ -67,16 +67,14 @@ export default function TenantSettingsPage() {
     if (!user) return;
 
     try {
-      const { error, data, count } = await supabase
+      // Only update phone - name can only be changed by committee/admin
+      const { error, data } = await supabase
         .from('profiles')
         .update({
-          full_name: profile.full_name,
           phone: profile.phone || null,
         } as never)
         .eq('id', user.id)
         .select();
-
-      console.log('Update result:', { error, data, count, userId: user.id });
 
       if (error) throw error;
 
@@ -84,6 +82,14 @@ export default function TenantSettingsPage() {
         toast.error('לא ניתן לעדכן - בדוק הרשאות');
         return;
       }
+
+      // Also update phone in building_members
+      await supabase
+        .from('building_members')
+        .update({
+          phone: profile.phone || null,
+        } as never)
+        .eq('user_id', user.id);
 
       toast.success('הפרופיל עודכן בהצלחה');
     } catch (error) {
@@ -204,9 +210,10 @@ export default function TenantSettingsPage() {
               <Input
                 id="full_name"
                 value={profile.full_name}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                required
+                disabled
+                className="bg-muted"
               />
+              <p className="text-xs text-muted-foreground">לשינוי השם יש לפנות לוועד הבית</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">טלפון</Label>
