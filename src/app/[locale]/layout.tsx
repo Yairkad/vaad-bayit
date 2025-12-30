@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: "ועד בית - מערכת ניהול",
   description: "מערכת חינמית לניהול ועד בית - מעקב תשלומים, ניהול דיירים, הודעות ומסמכים. הכל במקום אחד!",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
