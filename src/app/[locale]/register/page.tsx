@@ -166,18 +166,29 @@ function RegisterForm() {
       } else if (authData.user) {
         // Email confirmation required - save invite info to database for later
         if (invite) {
-          // Save to database so it works across browsers/devices
-          await supabase
-            .from('pending_invites')
-            .upsert({
-              user_email: formData.email,
-              building_id: invite.building_id,
-              invite_id: invite.id,
-              apartment_number: formData.apartmentNumber,
-              full_name: formData.fullName,
-              phone: formData.phone || null,
-              default_role: invite.default_role,
-            } as never, { onConflict: 'user_email' });
+          // Save to database via API route (uses service role to bypass RLS)
+          try {
+            const response = await fetch('/api/pending-invite', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_email: formData.email,
+                building_id: invite.building_id,
+                invite_id: invite.id,
+                apartment_number: formData.apartmentNumber,
+                full_name: formData.fullName,
+                phone: formData.phone || null,
+                default_role: invite.default_role,
+              }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error('Failed to save pending invite:', errorData);
+            }
+          } catch (err) {
+            console.error('Error saving pending invite:', err);
+          }
         }
         toast.info('נשלח אליך מייל לאימות. אנא אמת את המייל והתחבר שוב.');
         router.push('/login');
