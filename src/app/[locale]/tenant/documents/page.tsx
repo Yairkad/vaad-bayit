@@ -12,6 +12,7 @@ interface Document {
   title: string;
   category: string;
   file_path: string;
+  visible_to_tenants: boolean;
   created_at: string;
 }
 
@@ -50,10 +51,12 @@ export default function TenantDocumentsPage() {
     }
 
     // Get documents - general building documents OR documents for this member
+    // Only show documents that are visible to tenants
     const { data } = await supabase
       .from('documents')
       .select('*')
       .eq('building_id', membership.building_id)
+      .eq('visible_to_tenants', true)
       .or(`member_id.is.null,member_id.eq.${membership.id}`)
       .order('created_at', { ascending: false }) as { data: Document[] | null };
 

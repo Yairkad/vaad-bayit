@@ -163,3 +163,123 @@
   background: linear-gradient(90deg, rgba(30,41,59,0.9) 0%, rgba(8,51,68,0.9) 50%, rgba(12,25,41,0.9) 100%);
   backdrop-filter: blur(10px);
 }
+
+/* Print styles for reports */
+@media print {
+  /* Hide non-essential elements */
+  nav, aside, header, footer, button,
+  .no-print, [data-slot="sidebar"] {
+    display: none !important;
+  }
+
+  /* Reset page setup */
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  /* Force fit to one page */
+  html, body {
+    width: 100%;
+    height: auto;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    font-size: 10px !important;
+  }
+
+  /* Make content take full width */
+  main, .container, [role="main"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Compact cards */
+  .card, [data-slot="card"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    margin-bottom: 8px !important;
+    padding: 6px !important;
+  }
+
+  /* Compact card headers */
+  .card-header, [class*="CardHeader"] {
+    padding: 4px 8px !important;
+  }
+
+  /* Compact card content */
+  .card-content, [class*="CardContent"] {
+    padding: 4px 8px !important;
+  }
+
+  /* Smaller text in cards */
+  .card h2, .card h3, .card-title, [class*="CardTitle"] {
+    font-size: 12px !important;
+    margin: 0 !important;
+  }
+
+  .card p, .card span, .card-description {
+    font-size: 9px !important;
+  }
+
+  /* Compact stats */
+  .text-2xl {
+    font-size: 14px !important;
+  }
+
+  .text-3xl {
+    font-size: 16px !important;
+  }
+
+  /* Grid layout adjustments */
+  .grid {
+    gap: 8px !important;
+  }
+
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .md\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  /* Compact spacing */
+  .space-y-6 > * + * {
+    margin-top: 8px !important;
+  }
+
+  .space-y-4 > * + * {
+    margin-top: 4px !important;
+  }
+
+  /* Tables */
+  table {
+    font-size: 9px !important;
+  }
+
+  th, td {
+    padding: 2px 4px !important;
+  }
+
+  /* Smaller badges */
+  .badge, [class*="Badge"] {
+    font-size: 8px !important;
+    padding: 1px 4px !important;
+  }
+
+  /* Icons */
+  svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* Hide dialogs */
+  [role="dialog"], .dialog {
+    display: none !important;
+  }
+}

@@ -95,16 +95,14 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      // Also update name in building_members if membership exists
-      if (membership) {
-        await supabase
-          .from('building_members')
-          .update({
-            full_name: formData.full_name,
-            phone: formData.phone || null,
-          } as never)
-          .eq('user_id', profile.id);
-      }
+      // Also update name in building_members (regardless of membership state)
+      await supabase
+        .from('building_members')
+        .update({
+          full_name: formData.full_name,
+          phone: formData.phone || null,
+        } as never)
+        .eq('user_id', profile.id);
 
       toast.success('הפרופיל עודכן בהצלחה');
       loadData();

@@ -313,6 +313,7 @@ export interface Database {
           title: string
           category: DocumentCategory
           file_path: string
+          visible_to_tenants: boolean
           uploaded_by: string | null
           created_at: string
         }
@@ -323,6 +324,7 @@ export interface Database {
           title: string
           category: DocumentCategory
           file_path: string
+          visible_to_tenants?: boolean
           uploaded_by?: string | null
           created_at?: string
         }
@@ -333,6 +335,7 @@ export interface Database {
           title?: string
           category?: DocumentCategory
           file_path?: string
+          visible_to_tenants?: boolean
           uploaded_by?: string | null
           created_at?: string
         }

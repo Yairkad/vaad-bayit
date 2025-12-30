@@ -33,7 +33,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, FileText, Download, Eye } from 'lucide-react';
+import { Plus, Trash2, Loader2, FileText, Download, Eye, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import type { Document, Building, BuildingMember } from '@/types/database';
 
 type MemberWithBuilding = BuildingMember & {
@@ -62,6 +63,7 @@ export default function DocumentsPage() {
   const [formData, setFormData] = useState({
     title: '',
     category: 'other',
+    visible_to_tenants: true,
   });
 
   useEffect(() => {
@@ -98,7 +100,7 @@ export default function DocumentsPage() {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', category: 'other' });
+    setFormData({ title: '', category: 'other', visible_to_tenants: true });
     setSelectedFile(null);
   };
 
@@ -127,6 +129,7 @@ export default function DocumentsPage() {
         title: formData.title,
         category: formData.category,
         file_path: fileName,
+        visible_to_tenants: formData.visible_to_tenants,
         uploaded_by: user?.id,
       };
 
@@ -295,6 +298,19 @@ export default function DocumentsPage() {
                     PDF, Word, Excel או תמונה
                   </p>
                 </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <Switch
+                    id="visible_to_tenants"
+                    checked={formData.visible_to_tenants}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, visible_to_tenants: checked })
+                    }
+                  />
+                  <Label htmlFor="visible_to_tenants" className="text-sm font-normal cursor-pointer">
+                    הצג לדיירים
+                  </Label>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -346,6 +362,7 @@ export default function DocumentsPage() {
                 <TableHead></TableHead>
                 <TableHead>{t('documents.documentTitle')}</TableHead>
                 <TableHead>{t('documents.category')}</TableHead>
+                <TableHead>נראות</TableHead>
                 <TableHead>{t('common.date')}</TableHead>
                 <TableHead>{t('common.actions')}</TableHead>
               </TableRow>
@@ -359,6 +376,19 @@ export default function DocumentsPage() {
                   <TableCell className="font-medium">{doc.title}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{getCategoryLabel(doc.category)}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {doc.visible_to_tenants ? (
+                      <span className="flex items-center gap-1 text-green-600 text-sm" title="נראה לדיירים">
+                        <Eye className="h-4 w-4" />
+                        <span className="hidden sm:inline">גלוי</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-muted-foreground text-sm" title="מוסתר מדיירים">
+                        <EyeOff className="h-4 w-4" />
+                        <span className="hidden sm:inline">מוסתר</span>
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {new Date(doc.created_at).toLocaleDateString('he-IL')}
@@ -394,7 +424,7 @@ export default function DocumentsPage() {
               ))}
               {filteredDocs.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     אין מסמכים
                   </TableCell>
                 </TableRow>

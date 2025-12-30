@@ -28,7 +28,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, TrendingUp, TrendingDown, Users, AlertTriangle, ChevronLeft } from 'lucide-react';
+import { Loader2, FileText, TrendingUp, TrendingDown, Users, AlertTriangle, ChevronLeft, Download } from 'lucide-react';
 import type { Payment, Expense, BuildingMember, Building } from '@/types/database';
 
 type PaymentWithMember = Payment & { building_members: BuildingMember };
@@ -169,6 +169,57 @@ export default function ReportsPage() {
   };
 
   const selectedMonthData = getSelectedMonthData();
+
+  const exportToExcel = () => {
+    // Create CSV content with BOM for Hebrew Excel support
+    const BOM = '\uFEFF';
+
+    // Summary section
+    let csvContent = 'דוח שנתי - ' + selectedYear + '\n';
+    csvContent += building?.name + '\n\n';
+    csvContent += 'סיכום שנתי\n';
+    csvContent += 'סה״כ הכנסות צפויות,₪' + totalExpected.toLocaleString() + '\n';
+    csvContent += 'שולם בפועל,₪' + totalPaid.toLocaleString() + '\n';
+    csvContent += 'לא שולם,₪' + totalUnpaid.toLocaleString() + '\n';
+    csvContent += 'סה״כ הוצאות,₪' + totalExpenses.toLocaleString() + '\n';
+    csvContent += 'מאזן,₪' + balance.toLocaleString() + '\n\n';
+
+    // Monthly breakdown
+    csvContent += 'פירוט חודשי\n';
+    csvContent += 'חודש,הכנסות צפויות,שולם,הוצאות,מאזן\n';
+    monthlyData.forEach(data => {
+      csvContent += `${data.month},₪${data.expected.toLocaleString()},₪${data.paid.toLocaleString()},₪${data.expenses.toLocaleString()},₪${(data.paid - data.expenses).toLocaleString()}\n`;
+    });
+    csvContent += '\n';
+
+    // Expense breakdown by category
+    csvContent += 'פירוט הוצאות לפי קטגוריה\n';
+    csvContent += 'קטגוריה,סכום\n';
+    Object.entries(expensesByCategory)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([category, amount]) => {
+        csvContent += `${category},₪${amount.toLocaleString()}\n`;
+      });
+    csvContent += '\n';
+
+    // Debtors list
+    if (debtors.length > 0) {
+      csvContent += 'רשימת חייבים\n';
+      csvContent += 'דירה,שם,חודשים לא שולמו,סכום חוב\n';
+      debtors.forEach(({ member, unpaidCount, unpaidAmount }) => {
+        csvContent += `${member.apartment_number},${member.full_name},${unpaidCount},₪${unpaidAmount.toLocaleString()}\n`;
+      });
+    }
+
+    // Download the file
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `דוח_שנתי_${selectedYear}_${building?.name || 'בניין'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (isLoading) {
     return (
@@ -353,8 +404,12 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* Print Button */}
-      <div className="flex justify-end">
+      {/* Export Buttons */}
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={exportToExcel}>
+          <Download className="ml-2 h-4 w-4" />
+          ייצא לאקסל
+        </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <FileText className="ml-2 h-4 w-4" />
           הדפס דוח
