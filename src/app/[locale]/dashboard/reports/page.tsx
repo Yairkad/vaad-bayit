@@ -33,6 +33,20 @@ import type { Payment, Expense, BuildingMember, Building } from '@/types/databas
 
 type PaymentWithMember = Payment & { building_members: BuildingMember };
 
+// Hebrew category labels
+const CATEGORY_LABELS: Record<string, string> = {
+  maintenance: 'תחזוקה',
+  cleaning: 'ניקיון',
+  electricity: 'חשמל',
+  water: 'מים',
+  elevator: 'מעלית',
+  garden: 'גינון',
+  insurance: 'ביטוח',
+  other: 'אחר',
+};
+
+const getCategoryLabel = (category: string) => CATEGORY_LABELS[category] || category;
+
 export default function ReportsPage() {
   const t = useTranslations();
   const [isLoading, setIsLoading] = useState(true);
@@ -198,7 +212,7 @@ export default function ReportsPage() {
     Object.entries(expensesByCategory)
       .sort((a, b) => b[1] - a[1])
       .forEach(([category, amount]) => {
-        csvContent += `${category},₪${amount.toLocaleString()}\n`;
+        csvContent += `${getCategoryLabel(category)},₪${amount.toLocaleString()}\n`;
       });
     csvContent += '\n';
 
@@ -241,13 +255,13 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('nav.reports')}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('nav.reports')}</h1>
           <p className="text-muted-foreground">{building?.name}</p>
         </div>
         <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-full sm:w-32">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -259,7 +273,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
@@ -311,7 +325,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
         {/* Monthly Breakdown */}
         <Card>
           <CardHeader>
@@ -330,7 +344,7 @@ export default function ReportsPage() {
                     <span className="font-medium w-16">{data.month}</span>
                     <ChevronLeft className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-2 sm:gap-4 text-xs sm:text-sm">
                     <span className="text-green-600">+₪{data.paid.toLocaleString()}</span>
                     <span className="text-red-600">-₪{data.expenses.toLocaleString()}</span>
                     <span className={`font-medium ${data.paid - data.expenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -356,7 +370,7 @@ export default function ReportsPage() {
                   .sort((a, b) => b[1] - a[1])
                   .map(([category, amount]) => (
                     <div key={category} className="flex items-center justify-between">
-                      <span className="text-sm">{category}</span>
+                      <span className="text-sm">{getCategoryLabel(category)}</span>
                       <span className="font-medium">₪{amount.toLocaleString()}</span>
                     </div>
                   ))}
@@ -405,12 +419,12 @@ export default function ReportsPage() {
       </Card>
 
       {/* Export Buttons */}
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={exportToExcel}>
+      <div className="flex flex-col sm:flex-row justify-end gap-2">
+        <Button variant="outline" onClick={exportToExcel} className="w-full sm:w-auto">
           <Download className="ml-2 h-4 w-4" />
           ייצא לאקסל
         </Button>
-        <Button variant="outline" onClick={() => window.print()}>
+        <Button variant="outline" onClick={() => window.print()} className="w-full sm:w-auto">
           <FileText className="ml-2 h-4 w-4" />
           הדפס דוח
         </Button>
@@ -431,7 +445,7 @@ export default function ReportsPage() {
           {selectedMonthData && (
             <div className="space-y-6 py-4">
               {/* Summary */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="pt-4">
                     <p className="text-sm text-muted-foreground">הכנסות</p>
@@ -511,7 +525,7 @@ export default function ReportsPage() {
                         .map((expense) => (
                           <TableRow key={expense.id}>
                             <TableCell>{new Date(expense.expense_date).toLocaleDateString('he-IL')}</TableCell>
-                            <TableCell>{expense.category}</TableCell>
+                            <TableCell>{getCategoryLabel(expense.category)}</TableCell>
                             <TableCell>{expense.description || '-'}</TableCell>
                             <TableCell className="text-red-600">₪{Number(expense.amount).toLocaleString()}</TableCell>
                           </TableRow>

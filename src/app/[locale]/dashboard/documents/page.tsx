@@ -33,9 +33,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, FileText, Download, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Loader2, FileText, Download, Eye, EyeOff, Pencil } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import type { Document, Building, BuildingMember } from '@/types/database';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type MemberWithBuilding = BuildingMember & {
   buildings: Building | null;
@@ -176,6 +182,23 @@ export default function DocumentsPage() {
     loadData();
   };
 
+  const toggleVisibility = async (doc: Document) => {
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from('documents')
+      .update({ visible_to_tenants: !doc.visible_to_tenants } as never)
+      .eq('id', doc.id);
+
+    if (error) {
+      toast.error('שגיאה בעדכון');
+      return;
+    }
+
+    toast.success(doc.visible_to_tenants ? 'המסמך הוסתר מהדיירים' : 'המסמך גלוי לדיירים');
+    loadData();
+  };
+
   const getFileUrl = async (filePath: string) => {
     const supabase = createClient();
     const { data } = await supabase.storage
@@ -231,9 +254,9 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('documents.title')}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('documents.title')}</h1>
           <p className="text-muted-foreground">{building?.name}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -350,8 +373,64 @@ export default function DocumentsPage() {
         })}
       </div>
 
-      {/* Documents Table */}
-      <Card>
+      {/* Mobile Cards View */}
+      <div className="md:hidden space-y-3">
+        {filteredDocs.map((doc) => (
+          <Card key={doc.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">{doc.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline">{getCategoryLabel(doc.category)}</Badge>
+                    {doc.visible_to_tenants ? (
+                      <span className="flex items-center gap-1 text-green-600 text-xs">
+                        <Eye className="h-3 w-3" />
+                        גלוי לדיירים
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                        <EyeOff className="h-3 w-3" />
+                        מוסתר
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(doc.created_at).toLocaleDateString('he-IL')}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => handleView(doc)}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => toggleVisibility(doc)} title={doc.visible_to_tenants ? 'הסתר מדיירים' : 'הצג לדיירים'}>
+                    {doc.visible_to_tenants ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(doc)}>
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {filteredDocs.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              אין מסמכים
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Documents Table - Desktop */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="text-lg">רשימת מסמכים</CardTitle>
         </CardHeader>
@@ -410,6 +489,14 @@ export default function DocumentsPage() {
                         title={t('documents.download')}
                       >
                         <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleVisibility(doc)}
+                        title={doc.visible_to_tenants ? 'הסתר מדיירים' : 'הצג לדיירים'}
+                      >
+                        {doc.visible_to_tenants ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4 text-green-600" />}
                       </Button>
                       <Button
                         variant="ghost"

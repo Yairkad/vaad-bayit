@@ -282,6 +282,7 @@ export interface Database {
           description: string | null
           status: IssueStatus
           priority: IssuePriority
+          closing_response: string | null
           closed_at: string | null
           created_at: string
         }
@@ -293,6 +294,7 @@ export interface Database {
           description?: string | null
           status?: IssueStatus
           priority?: IssuePriority
+          closing_response?: string | null
           closed_at?: string | null
           created_at?: string
         }
@@ -304,6 +306,7 @@ export interface Database {
           description?: string | null
           status?: IssueStatus
           priority?: IssuePriority
+          closing_response?: string | null
           closed_at?: string | null
           created_at?: string
         }

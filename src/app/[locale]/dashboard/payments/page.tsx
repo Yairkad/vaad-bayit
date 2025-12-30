@@ -112,13 +112,14 @@ export default function PaymentsPage() {
       const existingMemberIds = payments.map(p => p.member_id);
 
       // Create payments for members who don't have one yet
+      // Use member's custom monthly_amount if set, otherwise fall back to building's monthly_fee
       const newPayments = members
         .filter(m => !existingMemberIds.includes(m.id))
         .map(member => ({
           building_id: buildingId,
           member_id: member.id,
           month: monthStart,
-          amount: building.monthly_fee,
+          amount: member.monthly_amount || building.monthly_fee,
           is_paid: member.payment_method === 'standing_order' && member.standing_order_active,
           payment_method: member.payment_method,
         }));

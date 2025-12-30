@@ -30,6 +30,7 @@ import {
   BarChart3,
   Link2,
   Inbox,
+  Wallet,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -76,6 +77,7 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
     { href: '/dashboard/tenants', icon: Users, label: tNav('tenants') },
     { href: '/dashboard/payments', icon: CreditCard, label: tNav('payments') },
     { href: '/dashboard/expenses', icon: Receipt, label: tNav('expenses') },
+    { href: '/dashboard/treasury', icon: Wallet, label: 'קופה' },
     { href: '/dashboard/messages', icon: MessageSquare, label: tNav('messages') },
     { href: '/dashboard/issues', icon: AlertTriangle, label: tNav('issues') },
     { href: '/dashboard/documents', icon: FileText, label: tNav('documents') },

@@ -217,9 +217,9 @@ export default function MessagesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('messages.title')}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('messages.title')}</h1>
           <p className="text-muted-foreground">{building?.name}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -280,7 +280,7 @@ export default function MessagesPage() {
                 </div>
 
                 {formData.requires_response && (
-                  <div className="grid grid-cols-2 gap-4 p-3 border rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 border rounded-lg">
                     <div className="space-y-2">
                       <Label htmlFor="yes_label">טקסט כפתור ראשון *</Label>
                       <Input
@@ -408,7 +408,7 @@ export default function MessagesPage() {
                       <span className="font-medium">תשובות ({(message.responses?.length || 0)})</span>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-2 sm:gap-3 flex-wrap">
                       {/* Yes Button */}
                       <Button
                         variant={expanded === 'yes' ? 'default' : 'outline'}

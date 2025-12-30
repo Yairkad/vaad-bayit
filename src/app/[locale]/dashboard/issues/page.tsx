@@ -56,6 +56,8 @@ export default function IssuesPage() {
     description: '',
     priority: 'normal' as 'low' | 'normal' | 'high',
   });
+  const [closingIssue, setClosingIssue] = useState<Issue | null>(null);
+  const [closingResponse, setClosingResponse] = useState('');
 
   useEffect(() => {
     loadData();
@@ -132,13 +134,21 @@ export default function IssuesPage() {
   };
 
   const updateStatus = async (issue: Issue, newStatus: 'open' | 'in_progress' | 'closed') => {
+    // If closing, open the closing dialog
+    if (newStatus === 'closed') {
+      setClosingIssue(issue);
+      setClosingResponse('');
+      return;
+    }
+
     const supabase = createClient();
 
     const { error } = await supabase
       .from('issues')
       .update({
         status: newStatus,
-        closed_at: newStatus === 'closed' ? new Date().toISOString() : null,
+        closed_at: null,
+        closing_response: null,
       } as never)
       .eq('id', issue.id);
 
@@ -148,6 +158,34 @@ export default function IssuesPage() {
     }
 
     toast.success('הסטטוס עודכן');
+    loadData();
+  };
+
+  const handleCloseIssue = async () => {
+    if (!closingIssue) return;
+
+    setIsSaving(true);
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from('issues')
+      .update({
+        status: 'closed',
+        closed_at: new Date().toISOString(),
+        closing_response: closingResponse || null,
+      } as never)
+      .eq('id', closingIssue.id);
+
+    if (error) {
+      toast.error('שגיאה בסגירת התקלה');
+      setIsSaving(false);
+      return;
+    }
+
+    toast.success('התקלה נסגרה');
+    setClosingIssue(null);
+    setClosingResponse('');
+    setIsSaving(false);
     loadData();
   };
 
@@ -233,9 +271,9 @@ export default function IssuesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('issues.title')}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('issues.title')}</h1>
           <p className="text-muted-foreground">{building?.name}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -312,7 +350,7 @@ export default function IssuesPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {(['all', 'open', 'in_progress', 'closed'] as const).map((status) => (
           <Button
             key={status}
@@ -331,8 +369,58 @@ export default function IssuesPage() {
         ))}
       </div>
 
-      {/* Issues Table */}
-      <Card>
+      {/* Mobile Cards View */}
+      <div className="md:hidden space-y-3">
+        {filteredIssues.map((issue) => (
+          <Card key={issue.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {getStatusBadge(issue.status)}
+                    {getPriorityBadge(issue.priority)}
+                  </div>
+                  <p className="font-medium">{issue.title}</p>
+                  {issue.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{issue.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{new Date(issue.created_at).toLocaleDateString('he-IL')}</span>
+                    {issue.building_members && (
+                      <span>• {issue.building_members.full_name} (דירה {issue.building_members.apartment_number})</span>
+                    )}
+                  </div>
+                </div>
+                <Select
+                  value={issue.status}
+                  onValueChange={(value: 'open' | 'in_progress' | 'closed') =>
+                    updateStatus(issue, value)
+                  }
+                >
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">{t('issues.status.open')}</SelectItem>
+                    <SelectItem value="in_progress">{t('issues.status.inProgress')}</SelectItem>
+                    <SelectItem value="closed">{t('issues.status.closed')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {filteredIssues.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              אין תקלות
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Issues Table - Desktop */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="text-lg">רשימת תקלות</CardTitle>
         </CardHeader>
@@ -385,7 +473,7 @@ export default function IssuesPage() {
                         updateStatus(issue, value)
                       }
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-28 sm:w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -408,6 +496,41 @@ export default function IssuesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Close Issue Dialog */}
+      <Dialog open={closingIssue !== null} onOpenChange={(open) => !open && setClosingIssue(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>סגירת תקלה</DialogTitle>
+            <DialogDescription>
+              {closingIssue?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="closing_response">תשובה לדייר (אופציונלי)</Label>
+              <Textarea
+                id="closing_response"
+                value={closingResponse}
+                onChange={(e) => setClosingResponse(e.target.value)}
+                placeholder="הסבר קצר על הטיפול בתקלה..."
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                התשובה תוצג לדייר שפתח את התקלה
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setClosingIssue(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleCloseIssue} disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'סגור תקלה'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

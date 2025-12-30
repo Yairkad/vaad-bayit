@@ -207,6 +207,7 @@ function RegisterForm() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
                 <p className="font-medium">שימו לב:</p>
                 <p>לאחר ההרשמה יישלח אליכם מייל לאימות. יש לאמת את המייל על מנת להתחבר למערכת.</p>
+                <p className="mt-1 text-blue-600">💡 לא קיבלתם מייל? בדקו בתיקיית הספאם/דואר זבל.</p>
               </div>
             </>
           ) : inviteError ? (
@@ -279,6 +280,9 @@ function RegisterForm() {
             </div>
           )}
 
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
+            <p>💡 לא קיבלתם מייל אימות? בדקו בתיקיית הספאם/דואר זבל.</p>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="password">{t('auth.password')}</Label>
             <PasswordInput

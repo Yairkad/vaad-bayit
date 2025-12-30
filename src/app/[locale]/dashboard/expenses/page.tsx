@@ -334,29 +334,31 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t('expenses.title')}</h1>
-          <p className="text-muted-foreground">{building?.name}</p>
-        </div>
-        <div className="flex gap-4 items-center">
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {getMonthOptions().map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={exportToExcel} disabled={expenses.length === 0}>
-            <Download className="ml-2 h-4 w-4" />
-            ייצוא
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">{t('expenses.title')}</h1>
+            <p className="text-muted-foreground">{building?.name}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {getMonthOptions().map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={exportToExcel} disabled={expenses.length === 0} className="flex-1 sm:flex-none">
+                <Download className="ml-2 h-4 w-4" />
+                ייצוא
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
           }}>
@@ -377,7 +379,7 @@ export default function ExpensesPage() {
               </DialogHeader>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="amount">{t('common.amount')} (₪) *</Label>
                       <Input
@@ -410,7 +412,7 @@ export default function ExpensesPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="expense_date">{t('common.date')} *</Label>
                       <Input
@@ -460,13 +462,15 @@ export default function ExpensesPage() {
                   </Button>
                 </DialogFooter>
               </form>
-            </DialogContent>
-          </Dialog>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Summary */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">סה״כ הוצאות</CardTitle>
@@ -487,8 +491,52 @@ export default function ExpensesPage() {
         ))}
       </div>
 
-      {/* Expenses Table */}
-      <Card>
+      {/* Mobile Cards View */}
+      <div className="md:hidden space-y-3">
+        {expenses.map((expense) => (
+          <Card key={expense.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline">{getCategoryLabel(expense.category)}</Badge>
+                    {expense.recurrence !== 'one_time' && (
+                      <Badge variant="secondary" className="text-xs">
+                        {getRecurrenceLabel(expense.recurrence)}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-lg font-bold">₪{getEffectiveAmount(expense).toLocaleString()}</p>
+                  {expense.description && (
+                    <p className="text-sm text-muted-foreground">{expense.description}</p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(expense.expense_date).toLocaleDateString('he-IL')}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => openEditDialog(expense)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(expense)}>
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {expenses.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              אין הוצאות לחודש זה
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Expenses Table - Desktop */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="text-lg">רשימת הוצאות</CardTitle>
         </CardHeader>

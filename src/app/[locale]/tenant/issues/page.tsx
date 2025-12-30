@@ -33,6 +33,7 @@ interface Issue {
   description: string | null;
   status: string;
   priority: string;
+  closing_response: string | null;
   created_at: string;
   closed_at: string | null;
 }
@@ -253,11 +254,17 @@ export default function TenantIssuesPage() {
                   )}
                 </p>
               </CardHeader>
-              {issue.description && (
-                <CardContent>
+              <CardContent className="space-y-3">
+                {issue.description && (
                   <p className="text-sm whitespace-pre-wrap">{issue.description}</p>
-                </CardContent>
-              )}
+                )}
+                {issue.closing_response && issue.status === 'closed' && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-sm font-medium text-green-800 mb-1">תשובת הוועד:</p>
+                    <p className="text-sm text-green-700 whitespace-pre-wrap">{issue.closing_response}</p>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           ))}
         </div>

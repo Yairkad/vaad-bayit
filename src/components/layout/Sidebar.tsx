@@ -19,6 +19,7 @@ import {
   Link2,
   Inbox,
   Loader2,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
@@ -54,6 +55,7 @@ export function Sidebar({ userRole }: SidebarProps) {
     { href: '/dashboard/tenants', icon: Users, label: t('tenants') },
     { href: '/dashboard/payments', icon: CreditCard, label: t('payments') },
     { href: '/dashboard/expenses', icon: Receipt, label: t('expenses') },
+    { href: '/dashboard/treasury', icon: Wallet, label: 'קופה' },
     { href: '/dashboard/messages', icon: MessageSquare, label: t('messages') },
     { href: '/dashboard/issues', icon: AlertTriangle, label: t('issues') },
     { href: '/dashboard/documents', icon: FileText, label: t('documents') },
