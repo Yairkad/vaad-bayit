@@ -29,6 +29,7 @@ interface Message {
 }
 
 interface TenantData {
+  userName: string | null;
   buildingName: string | null;
   apartmentNumber: string | null;
   standingOrderActive: boolean;
@@ -54,6 +55,13 @@ export default function TenantDashboardPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single() as { data: { full_name: string | null } | null };
+
     // Get building membership
     const { data: membership } = await supabase
       .from('building_members')
@@ -63,6 +71,7 @@ export default function TenantDashboardPage() {
 
     if (!membership) {
       setData({
+        userName: profile?.full_name || null,
         buildingName: null,
         apartmentNumber: null,
         standingOrderActive: false,
@@ -121,6 +130,7 @@ export default function TenantDashboardPage() {
     const totalDue = unpaidPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
     setData({
+      userName: profile?.full_name || null,
       buildingName: building?.address || building?.name || null,
       apartmentNumber: membership.apartment_number,
       standingOrderActive: membership.standing_order_active || false,
@@ -181,7 +191,9 @@ export default function TenantDashboardPage() {
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-3xl font-bold">שלום!</h1>
+        <h1 className="text-xl sm:text-3xl font-bold">
+          שלום{data.userName ? ` ${data.userName}` : ''}!
+        </h1>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           <Badge variant="outline" className="text-sm">
             <Building2 className="h-3 w-3 ml-1" />

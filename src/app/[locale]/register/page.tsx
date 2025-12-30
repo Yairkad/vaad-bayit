@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -280,10 +281,9 @@ function RegisterForm() {
 
           <div className="space-y-2">
             <Label htmlFor="password">{t('auth.password')}</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               value={formData.password}
               onChange={handleChange}
               required
@@ -293,10 +293,9 @@ function RegisterForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
               name="confirmPassword"
-              type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
               required

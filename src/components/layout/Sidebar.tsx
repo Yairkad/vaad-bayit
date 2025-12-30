@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,7 @@ import {
   LogOut,
   Link2,
   Inbox,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
@@ -30,6 +32,8 @@ export function Sidebar({ userRole }: SidebarProps) {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -85,18 +89,33 @@ export function Sidebar({ userRole }: SidebarProps) {
           const isActive = isRootPath
             ? pathname === link.href
             : pathname === link.href || pathname.startsWith(link.href + '/');
+          const isLoading = isPending && pendingHref === link.href;
           return (
             <Link
               key={link.href}
               href={link.href}
+              prefetch={true}
+              onClick={(e) => {
+                if (isActive) return;
+                e.preventDefault();
+                setPendingHref(link.href);
+                startTransition(() => {
+                  router.push(link.href);
+                });
+              }}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
                 isActive
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                isLoading && 'bg-muted text-foreground'
               )}
             >
-              <link.icon className="h-5 w-5" />
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <link.icon className="h-5 w-5" />
+              )}
               {link.label}
             </Link>
           );

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2, User, Key, ArrowLeft, LogOut } from 'lucide-react';
@@ -96,6 +97,11 @@ export default function TenantSettingsPage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!passwordData.currentPassword) {
+      toast.error('יש להזין את הסיסמה הנוכחית');
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error('הסיסמאות לא תואמות');
       return;
@@ -111,6 +117,19 @@ export default function TenantSettingsPage() {
     const supabase = createClient();
 
     try {
+      // First verify current password by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: passwordData.currentPassword,
+      });
+
+      if (signInError) {
+        toast.error('הסיסמה הנוכחית שגויה');
+        setIsChangingPassword(false);
+        return;
+      }
+
+      // Now update the password
       const { error } = await supabase.auth.updateUser({
         password: passwordData.newPassword,
       });
@@ -218,10 +237,18 @@ export default function TenantSettingsPage() {
         <CardContent>
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="currentPassword">סיסמה נוכחית</Label>
+              <PasswordInput
+                id="currentPassword"
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="newPassword">סיסמה חדשה</Label>
-              <Input
+              <PasswordInput
                 id="newPassword"
-                type="password"
                 value={passwordData.newPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                 required
@@ -230,9 +257,8 @@ export default function TenantSettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">אישור סיסמה</Label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
                 value={passwordData.confirmPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                 required
