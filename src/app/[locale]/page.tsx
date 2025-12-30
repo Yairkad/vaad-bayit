@@ -45,24 +45,30 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <header className="bg-gradient-to-b from-primary/10 to-background">
-        <div className="container mx-auto px-4 py-6">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-50 bg-[#bee4fa] border-b border-[#a5d4f0] shadow-sm">
+        <div className="container mx-auto px-4 py-3">
           <nav className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-primary">
-              {t('common.appName')}
-            </h1>
-            <div className="flex gap-4">
+            <Link href="/" className="flex items-center gap-2">
+              <img src="/icon.svg" alt="ועד בית" className="h-10 w-10" />
+              <span className="text-xl font-bold text-[#203857]">
+                {t('common.appName')}
+              </span>
+            </Link>
+            <div className="flex gap-2 sm:gap-4">
               <Link href="/login">
-                <Button variant="ghost">{t('auth.login')}</Button>
+                <Button variant="ghost" className="text-[#203857] hover:bg-[#a5d4f0]">{t('auth.login')}</Button>
               </Link>
               <Link href="/register">
-                <Button>{t('auth.register')}</Button>
+                <Button className="bg-[#203857] hover:bg-[#2d4a6f]">{t('auth.register')}</Button>
               </Link>
             </div>
           </nav>
         </div>
+      </header>
 
+      {/* Hero Section */}
+      <section className="bg-gradient-to-b from-[#bee4fa]/30 to-background">
         <div className="container mx-auto px-4 py-20 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             מערכת ניהול ועד בית
@@ -73,18 +79,18 @@ function HomeContent() {
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/register">
-              <Button size="lg" className="text-lg px-8">
+              <Button size="lg" className="text-lg px-8 bg-[#203857] hover:bg-[#2d4a6f]">
                 הרשמה
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="text-lg px-8">
+              <Button size="lg" variant="outline" className="text-lg px-8 border-[#203857] text-[#203857] hover:bg-[#bee4fa]">
                 התחברות
               </Button>
             </Link>
           </div>
         </div>
-      </header>
+      </section>
 
       {/* Features Section */}
       <section className="py-20 bg-muted/30">

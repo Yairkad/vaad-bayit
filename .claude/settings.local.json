@@ -16,7 +16,9 @@
       "Bash(git commit:*)",
       "Bash(git push)",
       "Bash(cat:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx vercel logs:*)",
+      "Bash(git push:*)"
     ]
   }
 }

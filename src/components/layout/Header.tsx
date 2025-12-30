@@ -107,11 +107,11 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
             {/* Logo */}
             <div className="p-6 border-b">
               <Link
-                href="/"
+                href={userRole === 'admin' ? '/admin' : userRole === 'tenant' ? '/tenant' : '/dashboard'}
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-2"
               >
-                <Building2 className="h-8 w-8 text-primary" />
+                <img src="/icon.svg" alt="ועד בית" className="h-8 w-8" />
                 <span className="text-xl font-bold">ועד בית</span>
               </Link>
             </div>
@@ -178,10 +178,13 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
         </Sheet>
 
         {/* Logo for mobile */}
-        <div className="md:hidden flex items-center gap-2">
-          <Building2 className="h-6 w-6 text-primary" />
+        <Link
+          href={userRole === 'admin' ? '/admin' : userRole === 'tenant' ? '/tenant' : '/dashboard'}
+          className="md:hidden flex items-center gap-2"
+        >
+          <img src="/icon.svg" alt="ועד בית" className="h-6 w-6" />
           <span className="font-semibold">ועד בית</span>
-        </div>
+        </Link>
 
         {/* Building info - desktop only */}
         {buildingName && (

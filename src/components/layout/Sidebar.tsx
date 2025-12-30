@@ -71,8 +71,8 @@ export function Sidebar({ userRole }: SidebarProps) {
     <aside className="fixed top-0 right-0 h-full w-64 bg-gradient-sidebar border-l flex flex-col z-40">
       {/* Logo */}
       <div className="p-6 border-b">
-        <Link href="/" className="flex items-center gap-2">
-          <Building2 className="h-8 w-8 text-primary" />
+        <Link href={userRole === 'admin' ? '/admin' : userRole === 'tenant' ? '/tenant' : '/dashboard'} className="flex items-center gap-2">
+          <img src="/icon.svg" alt="ועד בית" className="h-8 w-8" />
           <span className="text-xl font-bold">{t('dashboard')}</span>
         </Link>
       </div>
