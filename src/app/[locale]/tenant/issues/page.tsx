@@ -34,6 +34,7 @@ interface Issue {
   status: string;
   priority: string;
   closing_response: string | null;
+  in_progress_response: string | null;
   created_at: string;
   closed_at: string | null;
 }
@@ -258,10 +259,16 @@ export default function TenantIssuesPage() {
                 {issue.description && (
                   <p className="text-sm whitespace-pre-wrap">{issue.description}</p>
                 )}
+                {issue.in_progress_response && issue.status === 'in_progress' && (
+                  <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">עדכון מהוועד:</p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap">{issue.in_progress_response}</p>
+                  </div>
+                )}
                 {issue.closing_response && issue.status === 'closed' && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-sm font-medium text-green-800 mb-1">תשובת הוועד:</p>
-                    <p className="text-sm text-green-700 whitespace-pre-wrap">{issue.closing_response}</p>
+                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">תשובת הוועד:</p>
+                    <p className="text-sm text-green-700 dark:text-green-300 whitespace-pre-wrap">{issue.closing_response}</p>
                   </div>
                 )}
               </CardContent>

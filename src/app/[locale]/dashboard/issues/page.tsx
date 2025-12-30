@@ -58,6 +58,8 @@ export default function IssuesPage() {
   });
   const [closingIssue, setClosingIssue] = useState<Issue | null>(null);
   const [closingResponse, setClosingResponse] = useState('');
+  const [inProgressIssue, setInProgressIssue] = useState<Issue | null>(null);
+  const [inProgressResponse, setInProgressResponse] = useState('');
 
   useEffect(() => {
     loadData();
@@ -141,6 +143,13 @@ export default function IssuesPage() {
       return;
     }
 
+    // If moving to in_progress, open the in_progress dialog
+    if (newStatus === 'in_progress') {
+      setInProgressIssue(issue);
+      setInProgressResponse('');
+      return;
+    }
+
     const supabase = createClient();
 
     const { error } = await supabase
@@ -149,6 +158,7 @@ export default function IssuesPage() {
         status: newStatus,
         closed_at: null,
         closing_response: null,
+        in_progress_response: null,
       } as never)
       .eq('id', issue.id);
 
@@ -185,6 +195,33 @@ export default function IssuesPage() {
     toast.success('התקלה נסגרה');
     setClosingIssue(null);
     setClosingResponse('');
+    setIsSaving(false);
+    loadData();
+  };
+
+  const handleInProgressIssue = async () => {
+    if (!inProgressIssue) return;
+
+    setIsSaving(true);
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from('issues')
+      .update({
+        status: 'in_progress',
+        in_progress_response: inProgressResponse || null,
+      } as never)
+      .eq('id', inProgressIssue.id);
+
+    if (error) {
+      toast.error('שגיאה בעדכון התקלה');
+      setIsSaving(false);
+      return;
+    }
+
+    toast.success('התקלה עברה לטיפול');
+    setInProgressIssue(null);
+    setInProgressResponse('');
     setIsSaving(false);
     loadData();
   };
@@ -496,6 +533,41 @@ export default function IssuesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* In Progress Issue Dialog */}
+      <Dialog open={inProgressIssue !== null} onOpenChange={(open) => !open && setInProgressIssue(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>העברה לטיפול</DialogTitle>
+            <DialogDescription>
+              {inProgressIssue?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="in_progress_response">תשובה לדייר (אופציונלי)</Label>
+              <Textarea
+                id="in_progress_response"
+                value={inProgressResponse}
+                onChange={(e) => setInProgressResponse(e.target.value)}
+                placeholder="עדכון על התחלת הטיפול בתקלה..."
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                התשובה תוצג לדייר שפתח את התקלה
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setInProgressIssue(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleInProgressIssue} disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'העבר לטיפול'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Close Issue Dialog */}
       <Dialog open={closingIssue !== null} onOpenChange={(open) => !open && setClosingIssue(null)}>

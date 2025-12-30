@@ -33,6 +33,7 @@ export default function TreasuryPage() {
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [currentBalance, setCurrentBalance] = useState(0);
+  const [openingBalance, setOpeningBalance] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -55,7 +56,10 @@ export default function TreasuryPage() {
 
     if (membership?.building_id) {
       setBuildingId(membership.building_id);
-      setBuilding(membership.buildings as Building);
+      const buildingData = membership.buildings as Building & { opening_balance?: number };
+      setBuilding(buildingData);
+      const startingBalance = Number(buildingData?.opening_balance || 0);
+      setOpeningBalance(startingBalance);
 
       // Calculate totals from all time
       // Get all payments (income)
@@ -77,9 +81,8 @@ export default function TreasuryPage() {
       const expenseTotal = (expenses || []).reduce((sum, e) => sum + Number(e.amount), 0);
       setTotalExpenses(expenseTotal);
 
-      // Calculate balance (or use stored balance if exists)
-      // For now we'll calculate it automatically
-      setCurrentBalance(income - expenseTotal);
+      // Calculate balance including opening balance
+      setCurrentBalance(startingBalance + income - expenseTotal);
     }
 
     setIsLoading(false);
@@ -89,13 +92,26 @@ export default function TreasuryPage() {
     if (!buildingId || !newBalance) return;
 
     setIsSaving(true);
-    // Note: In a real implementation, you'd store this as a starting balance
-    // For now, we just show the UI
-    toast.success('היתרה עודכנה בהצלחה');
-    setIsDialogOpen(false);
-    setNewBalance('');
-    setIsSaving(false);
-    loadData();
+    const supabase = createClient();
+
+    try {
+      const { error } = await supabase
+        .from('buildings')
+        .update({ opening_balance: parseFloat(newBalance) } as never)
+        .eq('id', buildingId);
+
+      if (error) throw error;
+
+      toast.success('היתרה עודכנה בהצלחה');
+      setIsDialogOpen(false);
+      setNewBalance('');
+      loadData();
+    } catch (error) {
+      console.error('Error updating balance:', error);
+      toast.error('שגיאה בעדכון היתרה');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -228,6 +244,14 @@ export default function TreasuryPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
+            {openingBalance !== 0 && (
+              <div className="flex items-center justify-between py-2 border-b">
+                <span className="text-muted-foreground">יתרת פתיחה</span>
+                <span className={`font-medium ${openingBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  {openingBalance >= 0 ? '+' : '-'}₪{Math.abs(openingBalance).toLocaleString()}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-muted-foreground">סה"כ הכנסות</span>
               <span className="font-medium text-green-600">+₪{totalIncome.toLocaleString()}</span>
