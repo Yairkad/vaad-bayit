@@ -65,20 +65,34 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Delete related data first (due to foreign keys)
-    // Delete message responses
-    const { error: responsesError } = await supabaseAdmin
-      .from('message_responses')
-      .delete()
-      .eq('member_id', userIdToDelete);
-    if (responsesError) console.log('Note: message_responses deletion:', responsesError.message);
+    // Get user email first for pending_invites cleanup
+    const { data: userToDelete } = await supabaseAdmin.auth.admin.getUserById(userIdToDelete);
+    const userEmail = userToDelete.user?.email || '';
 
-    // Delete pending invites
-    const { error: pendingError } = await supabaseAdmin
-      .from('pending_invites')
-      .delete()
-      .eq('user_email', (await supabaseAdmin.auth.admin.getUserById(userIdToDelete)).data.user?.email || '');
-    if (pendingError) console.log('Note: pending_invites deletion:', pendingError.message);
+    // Get all building_members IDs for this user (for message_responses cleanup)
+    const { data: memberRecords } = await supabaseAdmin
+      .from('building_members')
+      .select('id')
+      .eq('user_id', userIdToDelete);
+
+    // Delete message responses for all member records
+    if (memberRecords && memberRecords.length > 0) {
+      const memberIds = memberRecords.map(m => m.id);
+      const { error: responsesError } = await supabaseAdmin
+        .from('message_responses')
+        .delete()
+        .in('member_id', memberIds);
+      if (responsesError) console.log('Note: message_responses deletion:', responsesError.message);
+    }
+
+    // Delete pending invites by email
+    if (userEmail) {
+      const { error: pendingError } = await supabaseAdmin
+        .from('pending_invites')
+        .delete()
+        .eq('user_email', userEmail);
+      if (pendingError) console.log('Note: pending_invites deletion:', pendingError.message);
+    }
 
     // Delete building memberships
     const { error: membersError } = await supabaseAdmin
