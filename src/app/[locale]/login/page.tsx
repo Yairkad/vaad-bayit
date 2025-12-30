@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { Building2, Loader2, CheckCircle } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -139,76 +139,101 @@ export default function LoginPage() {
   };
 
   return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+          <Building2 className="w-6 h-6 text-primary" />
+        </div>
+        <CardTitle className="text-2xl">{t('auth.loginTitle')}</CardTitle>
+        <CardDescription>{t('common.appName')}</CardDescription>
+      </CardHeader>
+      {showVerifiedMessage && (
+        <div className="mx-6 mb-4 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+          <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+            <CheckCircle className="h-5 w-5" />
+            <span className="font-medium">המייל אומת בהצלחה!</span>
+          </div>
+          <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+            כעת ניתן להתחבר למערכת. ניתן לסגור את הטאב הזה ולחזור לטאב המקורי.
+          </p>
+        </div>
+      )}
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">{t('auth.email')}</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="email@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">{t('auth.password')}</Label>
+            <PasswordInput
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+          </div>
+          <div className="text-left">
+            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+              {t('auth.forgotPassword')}
+            </Link>
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+          <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
+            {isLoading || isRedirecting ? (
+              <>
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                {isRedirecting ? 'מעביר אותך...' : t('common.loading')}
+              </>
+            ) : (
+              t('auth.login')
+            )}
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            {t('auth.noAccount')}{' '}
+            <Link href="/register" className="text-primary hover:underline">
+              {t('auth.register')}
+            </Link>
+          </p>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}
+
+function LoginFormFallback() {
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+          <Building2 className="w-6 h-6 text-primary" />
+        </div>
+        <CardTitle className="text-2xl">התחברות</CardTitle>
+        <CardDescription>מערכת ניהול ועד בית</CardDescription>
+      </CardHeader>
+      <CardContent className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Building2 className="w-6 h-6 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">{t('auth.loginTitle')}</CardTitle>
-          <CardDescription>{t('common.appName')}</CardDescription>
-        </CardHeader>
-        {showVerifiedMessage && (
-          <div className="mx-6 mb-4 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-            <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-              <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">המייל אומת בהצלחה!</span>
-            </div>
-            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-              כעת ניתן להתחבר למערכת. ניתן לסגור את הטאב הזה ולחזור לטאב המקורי.
-            </p>
-          </div>
-        )}
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">{t('auth.email')}</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">{t('auth.password')}</Label>
-              <PasswordInput
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="text-left">
-              <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-                {t('auth.forgotPassword')}
-              </Link>
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
-              {isLoading || isRedirecting ? (
-                <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  {isRedirecting ? 'מעביר אותך...' : t('common.loading')}
-                </>
-              ) : (
-                t('auth.login')
-              )}
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              {t('auth.noAccount')}{' '}
-              <Link href="/register" className="text-primary hover:underline">
-                {t('auth.register')}
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+      <Suspense fallback={<LoginFormFallback />}>
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }
