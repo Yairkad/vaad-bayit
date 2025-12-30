@@ -25,7 +25,7 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -33,6 +33,53 @@ export default function LoginPage() {
       if (error) {
         toast.error(t('auth.invalidCredentials'));
         return;
+      }
+
+      // Check for pending invite from registration
+      const pendingInviteStr = localStorage.getItem('pendingInvite');
+      if (pendingInviteStr && authData.user) {
+        try {
+          const pendingInvite = JSON.parse(pendingInviteStr);
+
+          // Check if user already has membership
+          const { data: existingMember } = await supabase
+            .from('building_members')
+            .select('id')
+            .eq('user_id', authData.user.id)
+            .eq('building_id', pendingInvite.building_id)
+            .single();
+
+          if (!existingMember) {
+            // Create building membership
+            const { error: memberError } = await supabase
+              .from('building_members')
+              .insert({
+                building_id: pendingInvite.building_id,
+                user_id: authData.user.id,
+                full_name: pendingInvite.full_name,
+                apartment_number: pendingInvite.apartment_number,
+                role: pendingInvite.default_role,
+                phone: pendingInvite.phone || null,
+                email: pendingInvite.email,
+              } as never);
+
+            if (!memberError) {
+              // Update invite uses count
+              await supabase
+                .from('building_invites')
+                .update({ uses_count: pendingInvite.uses_count + 1 } as never)
+                .eq('id', pendingInvite.invite_id);
+
+              toast.success('הצטרפת לבניין בהצלחה!');
+            }
+          }
+
+          // Clear the pending invite
+          localStorage.removeItem('pendingInvite');
+        } catch (inviteError) {
+          console.error('Error processing pending invite:', inviteError);
+          localStorage.removeItem('pendingInvite');
+        }
       }
 
       toast.success(t('common.success'));
