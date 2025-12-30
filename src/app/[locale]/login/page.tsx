@@ -33,7 +33,13 @@ export default function LoginPage() {
       });
 
       if (error) {
-        toast.error(t('auth.invalidCredentials'));
+        if (error.message === 'Invalid login credentials') {
+          toast.error('המייל או הסיסמה שגויים, או שהמשתמש לא רשום במערכת');
+        } else if (error.message === 'Email not confirmed') {
+          toast.error('יש לאשר את המייל לפני ההתחברות. בדוק את תיבת הדואר שלך.');
+        } else {
+          toast.error(error.message);
+        }
         setIsLoading(false);
         return;
       }
