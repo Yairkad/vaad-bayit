@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bug, Lightbulb, Upload, X, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -137,30 +137,25 @@ export function BugReportDialog({ trigger }: BugReportDialogProps) {
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              {/* Report Type */}
-              <div className="space-y-2">
-                <Label>סוג הפנייה</Label>
-                <RadioGroup
-                  value={type}
-                  onValueChange={(value) => setType(value as 'bug' | 'improvement')}
-                  className="flex gap-4"
-                >
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <RadioGroupItem value="bug" id="bug" />
-                    <Label htmlFor="bug" className="flex items-center gap-2 cursor-pointer">
-                      <Bug className="h-4 w-4 text-red-500" />
-                      דיווח באג
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <RadioGroupItem value="improvement" id="improvement" />
-                    <Label htmlFor="improvement" className="flex items-center gap-2 cursor-pointer">
-                      <Lightbulb className="h-4 w-4 text-yellow-500" />
-                      הצעת שיפור
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
+              {/* Report Type Tabs */}
+              <Tabs value={type} onValueChange={(value) => setType(value as 'bug' | 'improvement')} className="w-full">
+                <TabsList className="inline-flex h-auto p-1 bg-gray-100 rounded-lg gap-1 w-full">
+                  <TabsTrigger
+                    value="bug"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-600"
+                  >
+                    <Bug className="h-4 w-4" />
+                    דיווח באג
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="improvement"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-yellow-500 data-[state=active]:text-white data-[state=active]:shadow-sm text-gray-600"
+                  >
+                    <Lightbulb className="h-4 w-4" />
+                    הצעת שיפור
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
 
               {/* Name */}
               <div className="space-y-2">
