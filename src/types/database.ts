@@ -99,7 +99,7 @@ export interface Database {
           building_id: string
           user_id: string | null
           full_name: string
-          apartment_number: string
+          apartment_number: string | null
           role: MemberRole
           payment_method: PaymentMethod
           standing_order_active: boolean
@@ -122,7 +122,7 @@ export interface Database {
           building_id: string
           user_id?: string | null
           full_name: string
-          apartment_number: string
+          apartment_number?: string | null
           role?: MemberRole
           payment_method?: PaymentMethod
           standing_order_active?: boolean
@@ -145,7 +145,7 @@ export interface Database {
           building_id?: string
           user_id?: string | null
           full_name?: string
-          apartment_number?: string
+          apartment_number?: string | null
           role?: MemberRole
           payment_method?: PaymentMethod
           standing_order_active?: boolean

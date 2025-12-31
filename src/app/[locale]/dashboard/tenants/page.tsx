@@ -132,7 +132,7 @@ export default function TenantsPage() {
     setEditingMember(member);
     setFormData({
       full_name: member.full_name,
-      apartment_number: member.apartment_number,
+      apartment_number: member.apartment_number || '',
       phone: member.phone || '',
       phone2: (member as any).phone2 || '',
       email: member.email || '',
@@ -254,7 +254,7 @@ export default function TenantsPage() {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
-      member.apartment_number.toLowerCase().includes(query) ||
+      (member.apartment_number && member.apartment_number.toLowerCase().includes(query)) ||
       member.full_name.toLowerCase().includes(query) ||
       (member.storage_number && member.storage_number.toLowerCase().includes(query)) ||
       (member.parking_number && member.parking_number.toLowerCase().includes(query)) ||
