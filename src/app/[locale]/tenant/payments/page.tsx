@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, CheckCircle, XCircle, Calendar, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, CheckCircle, XCircle, Calendar, AlertCircle, CircleDollarSign } from 'lucide-react';
 
 interface Payment {
   id: string;
@@ -15,6 +16,15 @@ interface Payment {
   notes: string | null;
 }
 
+interface ExtraCharge {
+  id: string;
+  amount: number;
+  reason: string;
+  charge_date: string;
+  is_paid: boolean;
+  paid_at: string | null;
+}
+
 interface MemberInfo {
   payment_method: string;
   standing_order_active: boolean;
@@ -24,6 +34,7 @@ interface MemberInfo {
 
 export default function TenantPaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [extraCharges, setExtraCharges] = useState<ExtraCharge[]>([]);
   const [memberInfo, setMemberInfo] = useState<MemberInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,6 +75,15 @@ export default function TenantPaymentsPage() {
       .order('month', { ascending: false }) as { data: Payment[] | null };
 
     setPayments(data || []);
+
+    // Get extra charges
+    const { data: chargesData } = await supabase
+      .from('extra_charges')
+      .select('*')
+      .eq('member_id', membership.id)
+      .order('charge_date', { ascending: false }) as { data: ExtraCharge[] | null };
+
+    setExtraCharges(chargesData || []);
     setIsLoading(false);
   };
 
@@ -77,7 +97,9 @@ export default function TenantPaymentsPage() {
     return date.toLocaleDateString('he-IL', { month: 'short', year: '2-digit' });
   };
 
-  const totalDue = payments.filter(p => !p.is_paid).reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalPaymentsDue = payments.filter(p => !p.is_paid).reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalExtraChargesDue = extraCharges.filter(c => !c.is_paid).reduce((sum, c) => sum + Number(c.amount), 0);
+  const totalDue = totalPaymentsDue + totalExtraChargesDue;
 
   // Get next payment info
   const getNextPaymentInfo = () => {
@@ -179,10 +201,45 @@ export default function TenantPaymentsPage() {
         </CardContent>
       </Card>
 
+      {/* Extra Charges Card */}
+      {extraCharges.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CircleDollarSign className="h-5 w-5" />
+              חיובים נוספים
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {extraCharges.map((charge) => (
+                <div
+                  key={charge.id}
+                  className={`p-4 flex items-center justify-between ${!charge.is_paid ? 'bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
+                >
+                  <div className="space-y-1">
+                    <p className="font-medium">{charge.reason}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(charge.charge_date).toLocaleDateString('he-IL')}
+                    </p>
+                  </div>
+                  <div className="text-left space-y-1">
+                    <p className="font-bold">₪{Number(charge.amount).toLocaleString()}</p>
+                    <Badge variant={charge.is_paid ? 'default' : 'secondary'}>
+                      {charge.is_paid ? 'שולם' : 'ממתין'}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Payments History Table */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">היסטוריית תשלומים</CardTitle>
+          <CardTitle className="text-lg">היסטוריית תשלומים חודשיים</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {payments.length === 0 ? (

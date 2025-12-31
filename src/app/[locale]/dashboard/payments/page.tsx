@@ -202,6 +202,15 @@ export default function PaymentsPage() {
             padding: 32px;
             text-align: center;
           }
+          .header-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            background: white;
+            padding: 4px;
+          }
           .header h1 {
             font-size: 28px;
             font-weight: 700;
@@ -314,6 +323,7 @@ export default function PaymentsPage() {
       <body>
         <div class="receipt">
           <div class="header">
+            ${building?.logo_url ? `<img src="${building.logo_url}" alt="לוגו" class="header-logo" />` : ''}
             <h1>אישור תשלום ועד בית</h1>
             <div class="address">${addressWithCity}</div>
           </div>

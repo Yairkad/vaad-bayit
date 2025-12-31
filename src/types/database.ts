@@ -11,10 +11,11 @@ export type PaymentMethod = 'standing_order' | 'cash';
 export type MemberRole = 'committee' | 'tenant';
 export type IssueStatus = 'open' | 'in_progress' | 'closed';
 export type IssuePriority = 'low' | 'normal' | 'high';
-export type DocumentCategory = 'regulation' | 'insurance' | 'protocol' | 'standing_order' | 'other';
+export type DocumentCategory = 'regulation' | 'insurance' | 'protocol' | 'standing_order' | 'invoice' | 'receipt' | 'bank_statement' | 'report' | 'tenant_document' | 'other';
 export type MessageType = 'announcement' | 'meeting' | 'vote';
 export type ResponseType = 'yes' | 'no';
 export type ExpenseRecurrence = 'one_time' | 'monthly' | 'bi_monthly';
+export type ChargePaymentMethod = 'cash' | 'transfer' | 'check' | 'other';
 
 export interface Database {
   public: {
@@ -53,6 +54,7 @@ export interface Database {
           city: string | null
           monthly_fee: number
           opening_balance: number
+          logo_url: string | null
           is_approved: boolean
           created_by: string | null
           created_at: string
@@ -64,6 +66,7 @@ export interface Database {
           city?: string | null
           monthly_fee?: number
           opening_balance?: number
+          logo_url?: string | null
           is_approved?: boolean
           created_by?: string | null
           created_at?: string
@@ -75,6 +78,7 @@ export interface Database {
           city?: string | null
           monthly_fee?: number
           opening_balance?: number
+          logo_url?: string | null
           is_approved?: boolean
           created_by?: string | null
           created_at?: string
@@ -182,6 +186,8 @@ export interface Database {
           receipt_file: string | null
           recurrence: ExpenseRecurrence
           is_active: boolean
+          shared_buildings_count: number
+          original_amount: number | null
           created_by: string | null
           created_at: string
         }
@@ -195,6 +201,8 @@ export interface Database {
           receipt_file?: string | null
           recurrence?: ExpenseRecurrence
           is_active?: boolean
+          shared_buildings_count?: number
+          original_amount?: number | null
           created_by?: string | null
           created_at?: string
         }
@@ -208,6 +216,8 @@ export interface Database {
           receipt_file?: string | null
           recurrence?: ExpenseRecurrence
           is_active?: boolean
+          shared_buildings_count?: number
+          original_amount?: number | null
           created_by?: string | null
           created_at?: string
         }
@@ -428,6 +438,53 @@ export interface Database {
           created_at?: string
         }
       }
+      extra_charges: {
+        Row: {
+          id: string
+          building_id: string
+          member_id: string
+          expense_id: string | null
+          amount: number
+          reason: string
+          charge_date: string
+          is_paid: boolean
+          paid_at: string | null
+          payment_method: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          building_id: string
+          member_id: string
+          expense_id?: string | null
+          amount: number
+          reason: string
+          charge_date?: string
+          is_paid?: boolean
+          paid_at?: string | null
+          payment_method?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          building_id?: string
+          member_id?: string
+          expense_id?: string | null
+          amount?: number
+          reason?: string
+          charge_date?: string
+          is_paid?: boolean
+          paid_at?: string | null
+          payment_method?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -457,3 +514,4 @@ export type Issue = Tables<'issues'>;
 export type Document = Tables<'documents'>;
 export type BuildingInvite = Tables<'building_invites'>;
 export type MessageResponse = Tables<'message_responses'>;
+export type ExtraCharge = Tables<'extra_charges'>;

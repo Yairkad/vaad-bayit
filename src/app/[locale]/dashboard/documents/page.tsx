@@ -53,6 +53,11 @@ const CATEGORIES = [
   { value: 'insurance', label: 'ביטוח' },
   { value: 'protocol', label: 'פרוטוקול' },
   { value: 'standing_order', label: 'הוראת קבע' },
+  { value: 'invoice', label: 'חשבונית' },
+  { value: 'receipt', label: 'קבלה' },
+  { value: 'bank_statement', label: 'דף חשבון בנק' },
+  { value: 'report', label: 'דו"ח' },
+  { value: 'tenant_document', label: 'מסמך לדייר' },
   { value: 'other', label: 'אחר' },
 ];
 

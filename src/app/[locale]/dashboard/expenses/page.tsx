@@ -35,7 +35,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2, Repeat, Calendar, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Repeat, Calendar, Download, Upload, FileText, Users, Building2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { Expense, Building, BuildingMember, ExpenseRecurrence } from '@/types/database';
 
 const CATEGORIES = [
@@ -59,12 +60,14 @@ export default function ExpensesPage() {
   const t = useTranslations();
   const confirm = useConfirm();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [members, setMembers] = useState<BuildingMember[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [building, setBuilding] = useState<Building | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -76,6 +79,10 @@ export default function ExpensesPage() {
     description: '',
     expense_date: new Date().toISOString().split('T')[0],
     recurrence: 'one_time' as ExpenseRecurrence,
+    shared_buildings_count: '1',
+    is_partial: false,
+    selected_members: [] as string[],
+    receipt_file: null as string | null,
   });
 
   useEffect(() => {
@@ -105,6 +112,17 @@ export default function ExpensesPage() {
     if (membership?.building_id) {
       setBuildingId(membership.building_id);
       setBuilding(membership.buildings as Building);
+
+      // Load building members for partial expense selection
+      const { data: membersData } = await supabase
+        .from('building_members')
+        .select('*')
+        .eq('building_id', membership.building_id)
+        .order('apartment_number');
+
+      if (membersData) {
+        setMembers(membersData as BuildingMember[]);
+      }
     }
 
     setIsLoading(false);
@@ -168,6 +186,10 @@ export default function ExpensesPage() {
       description: '',
       expense_date: new Date().toISOString().split('T')[0],
       recurrence: 'one_time' as ExpenseRecurrence,
+      shared_buildings_count: '1',
+      is_partial: false,
+      selected_members: [],
+      receipt_file: null,
     });
     setEditingExpense(null);
   };
@@ -180,8 +202,55 @@ export default function ExpensesPage() {
       description: expense.description || '',
       expense_date: expense.expense_date,
       recurrence: expense.recurrence || 'one_time',
+      shared_buildings_count: String(expense.shared_buildings_count || 1),
+      is_partial: false, // We don't track this per expense yet
+      selected_members: [],
+      receipt_file: expense.receipt_file || null,
     });
     setIsDialogOpen(true);
+  };
+
+  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !buildingId) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('גודל הקובץ חייב להיות עד 5MB');
+      return;
+    }
+
+    setIsUploadingReceipt(true);
+    const supabase = createClient();
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${buildingId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        if (uploadError.message.includes('not found') || uploadError.message.includes('Bucket')) {
+          toast.error('יש ליצור bucket בשם receipts ב-Supabase Storage');
+          return;
+        }
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      setFormData({ ...formData, receipt_file: publicUrl });
+      toast.success('החשבונית הועלתה בהצלחה');
+    } catch (error) {
+      console.error(error);
+      toast.error('שגיאה בהעלאת החשבונית');
+    } finally {
+      setIsUploadingReceipt(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -193,35 +262,74 @@ export default function ExpensesPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     try {
+      const sharedCount = parseInt(formData.shared_buildings_count) || 1;
+      const totalAmount = Number(formData.amount);
+      const buildingAmount = sharedCount > 1 ? totalAmount / sharedCount : totalAmount;
+
       if (editingExpense) {
         const { error } = await supabase
           .from('expenses')
           .update({
-            amount: Number(formData.amount),
+            amount: buildingAmount,
             category: formData.category,
             description: formData.description || null,
             expense_date: formData.expense_date,
             recurrence: formData.recurrence,
+            shared_buildings_count: sharedCount,
+            original_amount: sharedCount > 1 ? totalAmount : null,
+            receipt_file: formData.receipt_file,
           } as never)
           .eq('id', editingExpense.id);
 
         if (error) throw error;
         toast.success('ההוצאה עודכנה');
       } else {
-        const { error } = await supabase
+        // Insert the expense
+        const { data: newExpense, error } = await supabase
           .from('expenses')
           .insert({
             building_id: buildingId,
-            amount: Number(formData.amount),
+            amount: buildingAmount,
             category: formData.category,
             description: formData.description || null,
             expense_date: formData.expense_date,
             recurrence: formData.recurrence,
+            shared_buildings_count: sharedCount,
+            original_amount: sharedCount > 1 ? totalAmount : null,
+            receipt_file: formData.receipt_file,
             created_by: user?.id,
-          } as never);
+          } as never)
+          .select()
+          .single();
 
         if (error) throw error;
-        toast.success('ההוצאה נוספה');
+
+        // If partial expense with selected members, create extra charges
+        if (formData.is_partial && formData.selected_members.length > 0) {
+          const chargeAmount = totalAmount / formData.selected_members.length;
+          const charges = formData.selected_members.map(memberId => ({
+            building_id: buildingId,
+            member_id: memberId,
+            expense_id: (newExpense as Expense).id,
+            amount: chargeAmount,
+            reason: formData.description || getCategoryLabel(formData.category),
+            charge_date: formData.expense_date,
+            created_by: user?.id,
+          }));
+
+          const { error: chargesError } = await supabase
+            .from('extra_charges')
+            .insert(charges as never);
+
+          if (chargesError) {
+            console.error('Error creating charges:', chargesError);
+            toast.warning('ההוצאה נוספה אך היתה שגיאה ביצירת החיובים');
+          } else {
+            toast.success(`ההוצאה נוספה ונוצרו ${formData.selected_members.length} חיובים`);
+          }
+        } else {
+          toast.success('ההוצאה נוספה');
+        }
       }
 
       setIsDialogOpen(false);
@@ -460,6 +568,131 @@ export default function ExpensesPage() {
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={2}
                     />
+                  </div>
+
+                  {/* Shared between buildings */}
+                  <div className="space-y-2 border-t pt-4">
+                    <Label className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      הוצאה משותפת בין בניינים
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">מספר בניינים:</span>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        className="w-20"
+                        value={formData.shared_buildings_count}
+                        onChange={(e) => setFormData({ ...formData, shared_buildings_count: e.target.value })}
+                      />
+                    </div>
+                    {parseInt(formData.shared_buildings_count) > 1 && formData.amount && (
+                      <p className="text-sm text-muted-foreground">
+                        חלק הבניין: ₪{(Number(formData.amount) / parseInt(formData.shared_buildings_count)).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Partial expense - specific apartments */}
+                  {!editingExpense && (
+                    <div className="space-y-2 border-t pt-4">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="is_partial"
+                          checked={formData.is_partial}
+                          onCheckedChange={(checked) => setFormData({ ...formData, is_partial: !!checked, selected_members: [] })}
+                        />
+                        <Label htmlFor="is_partial" className="flex items-center gap-2 cursor-pointer">
+                          <Users className="h-4 w-4" />
+                          חיוב לדירות ספציפיות בלבד
+                        </Label>
+                      </div>
+
+                      {formData.is_partial && (
+                        <div className="space-y-2 pr-6">
+                          <p className="text-sm text-muted-foreground">בחר את הדירות שישתתפו בהוצאה:</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                            {members.map(member => (
+                              <div key={member.id} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`member-${member.id}`}
+                                  checked={formData.selected_members.includes(member.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setFormData({ ...formData, selected_members: [...formData.selected_members, member.id] });
+                                    } else {
+                                      setFormData({ ...formData, selected_members: formData.selected_members.filter(id => id !== member.id) });
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={`member-${member.id}`} className="text-sm cursor-pointer">
+                                  דירה {member.apartment_number}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                          {formData.selected_members.length > 0 && formData.amount && (
+                            <p className="text-sm text-muted-foreground">
+                              חיוב לכל דירה: ₪{(Number(formData.amount) / formData.selected_members.length).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Receipt upload */}
+                  <div className="space-y-2 border-t pt-4">
+                    <Label className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      חשבונית / קבלה
+                    </Label>
+                    {formData.receipt_file ? (
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={formData.receipt_file}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          <FileText className="h-4 w-4" />
+                          צפה בחשבונית
+                        </a>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setFormData({ ...formData, receipt_file: null })}
+                        >
+                          הסר
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleReceiptUpload}
+                          className="hidden"
+                          id="receipt-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById('receipt-upload')?.click()}
+                          disabled={isUploadingReceipt}
+                        >
+                          {isUploadingReceipt ? (
+                            <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                          ) : (
+                            <Upload className="h-4 w-4 ml-2" />
+                          )}
+                          העלה חשבונית
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
