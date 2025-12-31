@@ -293,7 +293,7 @@ export default function TenantsPage() {
   }
 
   return (
-    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(200, 230, 201, 0.08) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
+    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(200, 230, 201, 0.15) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">{t('tenants.title')}</h1>
@@ -579,16 +579,24 @@ export default function TenantsPage() {
 
       {/* Tabs for Management and Phonebook */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="management" className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4" />
-            ניהול
-          </TabsTrigger>
-          <TabsTrigger value="phonebook" className="flex items-center gap-2">
-            <BookUser className="h-4 w-4" />
-            אלפון
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex justify-start">
+          <TabsList className="inline-flex h-auto p-1 bg-green-100/80 rounded-lg gap-1">
+            <TabsTrigger
+              value="management"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-green-200/60 data-[state=inactive]:text-green-800"
+            >
+              <Settings2 className="h-4 w-4" />
+              <span className="hidden sm:inline">ניהול</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="phonebook"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-green-200/60 data-[state=inactive]:text-green-800"
+            >
+              <BookUser className="h-4 w-4" />
+              <span className="hidden sm:inline">אלפון</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Management Tab */}
         <TabsContent value="management" className="mt-4">

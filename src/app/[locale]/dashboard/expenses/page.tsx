@@ -450,7 +450,7 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(248, 187, 208, 0.08) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
+    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(248, 187, 208, 0.15) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

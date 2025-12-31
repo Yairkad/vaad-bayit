@@ -590,7 +590,7 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(255, 249, 196, 0.08) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
+    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(255, 249, 196, 0.2) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">{t('payments.title')}</h1>
@@ -599,16 +599,26 @@ export default function PaymentsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="monthly" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            תשלומים חודשיים
-          </TabsTrigger>
-          <TabsTrigger value="extra" className="flex items-center gap-2">
-            <CircleDollarSign className="h-4 w-4" />
-            חיובים נוספים
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex justify-start">
+          <TabsList className="inline-flex h-auto p-1 bg-yellow-100/80 rounded-lg gap-1">
+            <TabsTrigger
+              value="monthly"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-yellow-200/60 data-[state=inactive]:text-yellow-800"
+            >
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:inline">תשלומים חודשיים</span>
+              <span className="sm:hidden">חודשי</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="extra"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-sm hover:bg-yellow-200/60 data-[state=inactive]:text-yellow-800"
+            >
+              <CircleDollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">חיובים נוספים</span>
+              <span className="sm:hidden">נוספים</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Monthly Payments Tab */}
         <TabsContent value="monthly" className="space-y-6 mt-6">
