@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, User, Key, ArrowRight, LogOut, Building2 } from 'lucide-react';
+import { Loader2, User, Key, ArrowRight, LogOut } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import type { Profile, BuildingMember, Building } from '@/types/database';
 
@@ -314,28 +314,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Building Settings Card - Only for committee members */}
-      {membership?.role === 'committee' && membership.buildings && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              הגדרות בניין
-            </CardTitle>
-            <CardDescription>ניהול פרטי הבניין, תשלומים ולוגו עבור {membership.buildings.name}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              בעמוד הגדרות הבניין תוכל לערוך את פרטי הבניין, להגדיר סכום תשלום חודשי, יתרת פתיחה, ולהעלות לוגו שיופיע במסמכים.
-            </p>
-            <Button onClick={() => router.push('/dashboard/building-settings')}>
-              <Building2 className="h-4 w-4 ml-2" />
-              עבור להגדרות בניין
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Logout Card */}
       <Card className="border-red-200">

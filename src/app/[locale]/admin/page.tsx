@@ -112,7 +112,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6" style={{ background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.2) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
+    <div className="space-y-4 sm:space-y-6" style={{ background: 'linear-gradient(135deg, rgba(243, 244, 246, 0.6) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div>
         <h1 className="text-xl sm:text-3xl font-bold">לוח בקרה - מנהל מערכת</h1>
         <p className="text-sm sm:text-base text-muted-foreground">ניהול כללי של המערכת</p>

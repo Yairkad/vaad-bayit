@@ -293,7 +293,7 @@ export default function TenantsPage() {
   }
 
   return (
-    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(200, 230, 201, 0.15) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
+    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(220, 252, 231, 0.6) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">{t('tenants.title')}</h1>

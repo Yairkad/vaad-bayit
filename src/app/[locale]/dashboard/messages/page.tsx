@@ -225,7 +225,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(179, 229, 252, 0.2) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
+    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(224, 242, 254, 0.6) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">{t('messages.title')}</h1>

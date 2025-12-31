@@ -590,7 +590,7 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(255, 249, 196, 0.2) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
+    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(254, 249, 195, 0.6) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">{t('payments.title')}</h1>

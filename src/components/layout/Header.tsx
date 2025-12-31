@@ -67,32 +67,32 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
     .slice(0, 2);
 
   const adminLinks = [
-    { href: '/admin', icon: LayoutDashboard, label: tNav('dashboard') },
-    { href: '/admin/buildings', icon: Building2, label: tNav('buildings') },
-    { href: '/admin/users', icon: Users, label: 'משתמשים' },
-    { href: '/admin/requests', icon: Inbox, label: 'פניות חדשות' },
+    { href: '/admin', icon: LayoutDashboard, label: tNav('dashboard'), color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' },
+    { href: '/admin/buildings', icon: Building2, label: tNav('buildings'), color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { href: '/admin/users', icon: Users, label: 'משתמשים', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { href: '/admin/requests', icon: Inbox, label: 'פניות חדשות', color: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
   ];
 
   const committeeLinks = [
-    { href: '/dashboard', icon: LayoutDashboard, label: tNav('dashboard') },
-    { href: '/dashboard/tenants', icon: Users, label: tNav('tenants') },
-    { href: '/dashboard/payments', icon: CreditCard, label: tNav('payments') },
-    { href: '/dashboard/expenses', icon: Receipt, label: tNav('expenses') },
-    { href: '/dashboard/treasury', icon: Wallet, label: 'קופה' },
-    { href: '/dashboard/messages', icon: MessageSquare, label: tNav('messages') },
-    { href: '/dashboard/issues', icon: AlertTriangle, label: tNav('issues') },
-    { href: '/dashboard/documents', icon: FileText, label: tNav('documents') },
-    { href: '/dashboard/reports', icon: BarChart3, label: tNav('reports') },
-    { href: '/dashboard/invites', icon: Link2, label: 'קישורי הזמנה' },
-    { href: '/dashboard/building-settings', icon: Building2, label: 'הגדרות בניין' },
+    { href: '/dashboard', icon: LayoutDashboard, label: tNav('dashboard'), color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
+    { href: '/dashboard/tenants', icon: Users, label: tNav('tenants'), color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+    { href: '/dashboard/payments', icon: CreditCard, label: tNav('payments'), color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    { href: '/dashboard/expenses', icon: Receipt, label: tNav('expenses'), color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
+    { href: '/dashboard/treasury', icon: Wallet, label: 'קופה', color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+    { href: '/dashboard/messages', icon: MessageSquare, label: tNav('messages'), color: 'bg-sky-100 text-sky-700 hover:bg-sky-200' },
+    { href: '/dashboard/issues', icon: AlertTriangle, label: tNav('issues'), color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { href: '/dashboard/documents', icon: FileText, label: tNav('documents'), color: 'bg-stone-100 text-stone-700 hover:bg-stone-200' },
+    { href: '/dashboard/reports', icon: BarChart3, label: tNav('reports'), color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+    { href: '/dashboard/invites', icon: Link2, label: 'קישורי הזמנה', color: 'bg-lime-100 text-lime-700 hover:bg-lime-200' },
+    { href: '/dashboard/building-settings', icon: Building2, label: 'הגדרות בניין', color: 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200' },
   ];
 
   const tenantLinks = [
-    { href: '/tenant', icon: LayoutDashboard, label: tNav('myArea') },
-    { href: '/tenant/payments', icon: CreditCard, label: tNav('payments') },
-    { href: '/tenant/messages', icon: MessageSquare, label: tNav('messages') },
-    { href: '/tenant/issues', icon: AlertTriangle, label: tNav('issues') },
-    { href: '/tenant/documents', icon: FileText, label: tNav('documents') },
+    { href: '/tenant', icon: LayoutDashboard, label: tNav('myArea'), color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { href: '/tenant/payments', icon: CreditCard, label: tNav('payments'), color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+    { href: '/tenant/messages', icon: MessageSquare, label: tNav('messages'), color: 'bg-sky-100 text-sky-700 hover:bg-sky-200' },
+    { href: '/tenant/issues', icon: AlertTriangle, label: tNav('issues'), color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+    { href: '/tenant/documents', icon: FileText, label: tNav('documents'), color: 'bg-stone-100 text-stone-700 hover:bg-stone-200' },
   ];
 
   const links = userRole === 'admin' ? adminLinks : userRole === 'committee' ? committeeLinks : tenantLinks;
@@ -131,7 +131,7 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
             )}
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+            <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
               {links.map((link) => {
                 // Check if this is an exact match or a sub-path match (but not for root paths)
                 const isRootPath = link.href === '/dashboard' || link.href === '/admin' || link.href === '/tenant';
@@ -144,10 +144,10 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
                     href={link.href}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors w-full',
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all w-full',
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        ? cn(link.color, 'ring-2 ring-offset-1 ring-current/30 shadow-sm')
+                        : link.color
                     )}
                   >
                     <link.icon className="h-5 w-5" />
