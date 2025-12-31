@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useBuilding } from '@/contexts/BuildingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -47,10 +48,8 @@ type MemberWithProfile = BuildingMember & {
 export default function TenantsPage() {
   const t = useTranslations();
   const confirm = useConfirm();
+  const { currentBuilding } = useBuilding();
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
-  const [buildingId, setBuildingId] = useState<string | null>(null);
-  const [buildingName, setBuildingName] = useState<string>('');
-  const [parkingLots, setParkingLots] = useState<ParkingLot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<BuildingMember | null>(null);
@@ -77,41 +76,33 @@ export default function TenantsPage() {
     move_in_date: '',
   });
 
+  // Get building info from context
+  const buildingId = currentBuilding?.id || null;
+  const buildingName = currentBuilding?.name || '';
+  const parkingLots = (currentBuilding?.parking_lots as ParkingLot[]) || [];
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentBuilding?.id) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentBuilding?.id]);
 
   const loadData = async () => {
+    if (!currentBuilding?.id) return;
+
+    setIsLoading(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
-
-    // Get user's building membership
-    type MembershipWithBuilding = BuildingMember & { buildings: Building | null };
-    const { data: membership } = await supabase
+    // Load all members of this building with profiles for email
+    const { data: membersData } = await supabase
       .from('building_members')
-      .select('building_id, buildings(*)')
-      .eq('user_id', user.id)
-      .eq('role', 'committee')
-      .single() as { data: MembershipWithBuilding | null };
+      .select('*, profiles(id, full_name, phone, email)')
+      .eq('building_id', currentBuilding.id)
+      .order('apartment_number') as { data: MemberWithProfile[] | null };
 
-    if (membership?.building_id) {
-      setBuildingId(membership.building_id);
-      const building = membership.buildings as Building;
-      setBuildingName(building?.name || '');
-      setParkingLots((building?.parking_lots as ParkingLot[]) || []);
-
-      // Load all members of this building with profiles for email
-      const { data: membersData } = await supabase
-        .from('building_members')
-        .select('*, profiles(id, full_name, phone, email)')
-        .eq('building_id', membership.building_id)
-        .order('apartment_number') as { data: MemberWithProfile[] | null };
-
-      setMembers(membersData || []);
-    }
-
+    setMembers(membersData || []);
     setIsLoading(false);
   };
 

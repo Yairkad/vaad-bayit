@@ -93,7 +93,6 @@ export default function TenantLayout({
     <div className="min-h-screen bg-gradient-main">
       <Header
         userName={userData?.fullName || 'משתמש'}
-        buildingName={userData?.buildingName || undefined}
         userRole="tenant"
       />
       <div className="flex">

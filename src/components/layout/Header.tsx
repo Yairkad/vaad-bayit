@@ -36,14 +36,14 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { BugReportDialog } from '@/components/BugReportDialog';
+import { BuildingSwitcher } from '@/components/BuildingSwitcher';
 
 interface HeaderProps {
   userName: string;
-  buildingName?: string;
   userRole?: 'admin' | 'committee' | 'tenant';
 }
 
-export function Header({ userName, buildingName, userRole = 'committee' }: HeaderProps) {
+export function Header({ userName, userRole = 'committee' }: HeaderProps) {
   const t = useTranslations();
   const tNav = useTranslations('nav');
   const router = useRouter();
@@ -121,13 +121,10 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
               </Link>
             </div>
 
-            {/* Building info on mobile */}
-            {buildingName && (
+            {/* Building Switcher on mobile */}
+            {userRole === 'committee' && (
               <div className="px-5 py-3 border-b border-[#d1d5db] bg-[#dde1e4]">
-                <div className="flex items-center gap-2 text-sm">
-                  <Building2 className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-600">{buildingName}</span>
-                </div>
+                <BuildingSwitcher />
               </div>
             )}
 
@@ -184,11 +181,10 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
           <span className="font-semibold">ועד בית</span>
         </Link>
 
-        {/* Building info - desktop only */}
-        {buildingName && (
-          <div className="hidden md:flex items-center gap-2 text-sm">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">{buildingName}</span>
+        {/* Building Switcher - desktop only, for committee members with multiple buildings */}
+        {userRole === 'committee' && (
+          <div className="hidden md:block">
+            <BuildingSwitcher />
           </div>
         )}
 

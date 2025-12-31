@@ -1,43 +1,39 @@
-import { createClient } from '@/lib/supabase/server';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useBuilding } from '@/contexts/BuildingContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from '@/i18n/navigation';
-import type { Building, Expense } from '@/types/database';
+import type { Expense } from '@/types/database';
 import { StatCard, type StatCardVariant, type StatCardIcon } from '@/components/ui/stat-card';
+import { Loader2 } from 'lucide-react';
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // Get user's building membership (separate queries to avoid 406)
-  const { data: membership } = await supabase
-    .from('building_members')
-    .select('building_id')
-    .eq('user_id', user?.id || '')
-    .single() as { data: { building_id: string } | null };
-
-  const buildingId = membership?.building_id;
-
-  // Get building details separately
-  let building: Building | null = null;
-  if (buildingId) {
-    const { data: buildingData } = await supabase
-      .from('buildings')
-      .select('*')
-      .eq('id', buildingId)
-      .single() as { data: Building | null };
-    building = buildingData;
-  }
-
-  // Get stats if building exists
-  let stats = {
+export default function DashboardPage() {
+  const { currentBuilding } = useBuilding();
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
     tenants: 0,
     unpaidPayments: 0,
     openIssues: 0,
     monthlyExpenses: 0,
-  };
+  });
 
-  if (buildingId) {
+  useEffect(() => {
+    if (currentBuilding?.id) {
+      loadStats();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentBuilding?.id]);
+
+  const loadStats = async () => {
+    if (!currentBuilding?.id) return;
+
+    setIsLoading(true);
+    const supabase = createClient();
+    const buildingId = currentBuilding.id;
+
     // Count tenants
     const { count: tenantsCount } = await supabase
       .from('building_members')
@@ -68,13 +64,15 @@ export default async function DashboardPage() {
 
     const monthlyExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
 
-    stats = {
+    setStats({
       tenants: tenantsCount || 0,
       unpaidPayments: unpaidCount || 0,
       openIssues: issuesCount || 0,
       monthlyExpenses,
-    };
-  }
+    });
+
+    setIsLoading(false);
+  };
 
   const cards: {
     title: string;
@@ -113,12 +111,20 @@ export default async function DashboardPage() {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(241, 245, 249, 0.6) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div>
         <h1 className="text-3xl font-bold">לוח בקרה</h1>
         <p className="text-muted-foreground">
-          {building?.name || 'ברוכים הבאים למערכת ועד בית'}
+          {currentBuilding?.name || 'ברוכים הבאים למערכת ועד בית'}
         </p>
       </div>
 
@@ -137,7 +143,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Welcome message if no building */}
-      {!buildingId && (
+      {!currentBuilding && (
         <Card>
           <CardHeader>
             <CardTitle>ברוכים הבאים!</CardTitle>
