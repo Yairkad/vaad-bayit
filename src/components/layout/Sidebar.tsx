@@ -64,7 +64,7 @@ export function Sidebar({ userRole }: SidebarProps) {
   const links = userRole === 'admin' ? adminLinks : userRole === 'committee' ? committeeLinks : tenantLinks;
 
   return (
-    <aside className="fixed top-0 right-0 h-full w-64 bg-[#e8ecef] border-l border-[#d1d5db] flex flex-col z-40">
+    <aside className="fixed top-0 right-0 h-full w-64 bg-[#e8ecef] flex flex-col z-40">
       {/* Logo */}
       <div className="p-5 border-b border-[#d1d5db]">
         <Link href={userRole === 'admin' ? '/admin' : userRole === 'tenant' ? '/tenant' : '/dashboard'} className="flex items-center gap-3">
@@ -74,7 +74,7 @@ export function Sidebar({ userRole }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <nav className="flex-1 py-4 pr-4 pl-0 space-y-2 overflow-y-auto">
         {links.map((link) => {
           const isRootPath = link.href === '/dashboard' || link.href === '/admin' || link.href === '/tenant';
           const isActive = isRootPath
@@ -82,35 +82,50 @@ export function Sidebar({ userRole }: SidebarProps) {
             : pathname === link.href || pathname.startsWith(link.href + '/');
           const isLoading = isPending && pendingHref === link.href;
           return (
-            <Link
-              key={link.href}
-              href={link.href}
-              prefetch={true}
-              onClick={(e) => {
-                if (isActive) return;
-                e.preventDefault();
-                setPendingHref(link.href);
-                startTransition(() => {
-                  router.push(link.href);
-                });
-              }}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all border-r-4',
-                'bg-[#e8ecef] text-gray-600 hover:text-gray-800',
-                link.borderColor,
-                isActive
-                  ? cn('shadow-[inset_3px_3px_6px_#c5c9cc,inset_-3px_-3px_6px_#ffffff]', link.activeColor)
-                  : 'shadow-[4px_4px_8px_#c5c9cc,-4px_-4px_8px_#ffffff]',
-                isLoading && 'opacity-70'
+            <div key={link.href} className="relative">
+              <Link
+                href={link.href}
+                prefetch={true}
+                onClick={(e) => {
+                  if (isActive) return;
+                  e.preventDefault();
+                  setPendingHref(link.href);
+                  startTransition(() => {
+                    router.push(link.href);
+                  });
+                }}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all border-r-4',
+                  'bg-[#e8ecef] text-gray-600 hover:text-gray-800',
+                  link.borderColor,
+                  isActive
+                    ? cn(
+                        'rounded-r-xl rounded-l-none bg-white shadow-none relative -ml-1',
+                        link.activeColor
+                      )
+                    : 'rounded-xl mr-1 shadow-[4px_4px_8px_#c5c9cc,-4px_-4px_8px_#ffffff]',
+                  isLoading && 'opacity-70'
+                )}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <link.icon className="h-5 w-5" />
+                )}
+                {link.label}
+              </Link>
+              {/* Tab connector curves */}
+              {isActive && (
+                <>
+                  <div className="absolute -top-2 left-0 w-2 h-2 bg-white">
+                    <div className="absolute inset-0 bg-[#e8ecef] rounded-br-lg" />
+                  </div>
+                  <div className="absolute -bottom-2 left-0 w-2 h-2 bg-white">
+                    <div className="absolute inset-0 bg-[#e8ecef] rounded-tr-lg" />
+                  </div>
+                </>
               )}
-            >
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <link.icon className="h-5 w-5" />
-              )}
-              {link.label}
-            </Link>
+            </div>
           );
         })}
       </nav>
