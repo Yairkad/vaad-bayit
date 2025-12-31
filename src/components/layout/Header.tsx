@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { BugReportDialog } from '@/components/BugReportDialog';
 
 interface HeaderProps {
   userName: string;
@@ -162,12 +163,13 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
             <div className="p-3 border-t border-[#d1d5db] mt-auto bg-[#dde1e4]">
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>גירסה 1.0.0</span>
-                <a
-                  href="mailto:support@vaad-bayit.co.il?subject=דיווח באג / הצעת שיפור"
-                  className="text-blue-600 hover:underline"
-                >
-                  דווח על באג
-                </a>
+                <BugReportDialog
+                  trigger={
+                    <button className="text-blue-600 hover:underline">
+                      דווח על באג
+                    </button>
+                  }
+                />
               </div>
             </div>
           </SheetContent>

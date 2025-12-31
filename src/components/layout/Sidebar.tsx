@@ -20,6 +20,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
+import { BugReportDialog } from '@/components/BugReportDialog';
 
 interface SidebarProps {
   userRole: 'admin' | 'committee' | 'tenant';
@@ -132,12 +133,13 @@ export function Sidebar({ userRole }: SidebarProps) {
       <div className="p-3 border-t mt-auto bg-muted/30">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>גירסה 1.0.0</span>
-          <a
-            href="mailto:support@vaad-bayit.co.il?subject=דיווח באג / הצעת שיפור"
-            className="text-primary hover:underline"
-          >
-            דווח על באג
-          </a>
+          <BugReportDialog
+            trigger={
+              <button className="text-primary hover:underline">
+                דווח על באג
+              </button>
+            }
+          />
         </div>
       </div>
     </aside>
