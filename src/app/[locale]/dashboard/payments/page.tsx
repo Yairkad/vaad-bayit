@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -21,16 +22,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Check, X, FileText, Loader2, Plus } from 'lucide-react';
-import type { Payment, BuildingMember, Building } from '@/types/database';
+import { Check, X, FileText, Loader2, Plus, Trash2, CreditCard, CircleDollarSign } from 'lucide-react';
+import type { Payment, BuildingMember, Building, ExtraCharge } from '@/types/database';
 
 type PaymentWithMember = Payment & {
   building_members: BuildingMember;
 };
 
+type ChargeWithMember = ExtraCharge & {
+  building_members: { full_name: string; apartment_number: string } | null;
+};
+
 export default function PaymentsPage() {
   const t = useTranslations();
+  const confirm = useConfirm();
+  const [activeTab, setActiveTab] = useState('monthly');
+
+  // Monthly payments state
   const [payments, setPayments] = useState<PaymentWithMember[]>([]);
   const [members, setMembers] = useState<BuildingMember[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
@@ -42,6 +64,19 @@ export default function PaymentsPage() {
   });
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Extra charges state
+  const [charges, setCharges] = useState<ChargeWithMember[]>([]);
+  const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
+  const [isSavingCharge, setIsSavingCharge] = useState(false);
+  const [chargeFilter, setChargeFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
+  const [chargeFormData, setChargeFormData] = useState({
+    member_id: '',
+    amount: '',
+    reason: '',
+    charge_date: new Date().toISOString().split('T')[0],
+    notes: '',
+  });
+
   useEffect(() => {
     loadData();
   }, []);
@@ -49,6 +84,7 @@ export default function PaymentsPage() {
   useEffect(() => {
     if (buildingId) {
       loadPayments();
+      loadCharges();
     }
   }, [buildingId, selectedMonth]);
 
@@ -98,6 +134,21 @@ export default function PaymentsPage() {
       .order('created_at');
 
     setPayments((data as PaymentWithMember[]) || []);
+  };
+
+  const loadCharges = async () => {
+    if (!buildingId) return;
+
+    const supabase = createClient();
+    const { data: chargesData } = await supabase
+      .from('extra_charges')
+      .select('*, building_members(full_name, apartment_number)')
+      .eq('building_id', buildingId)
+      .order('charge_date', { ascending: false });
+
+    if (chargesData) {
+      setCharges(chargesData as ChargeWithMember[]);
+    }
   };
 
   const generateMonthlyPayments = async () => {
@@ -415,9 +466,110 @@ export default function PaymentsPage() {
     return options;
   };
 
+  // Extra charges functions
+  const resetChargeForm = () => {
+    setChargeFormData({
+      member_id: '',
+      amount: '',
+      reason: '',
+      charge_date: new Date().toISOString().split('T')[0],
+      notes: '',
+    });
+  };
+
+  const handleChargeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!buildingId) return;
+
+    setIsSavingCharge(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    try {
+      const { error } = await supabase
+        .from('extra_charges')
+        .insert({
+          building_id: buildingId,
+          member_id: chargeFormData.member_id,
+          amount: Number(chargeFormData.amount),
+          reason: chargeFormData.reason,
+          charge_date: chargeFormData.charge_date,
+          notes: chargeFormData.notes || null,
+          created_by: user?.id,
+        } as never);
+
+      if (error) throw error;
+
+      toast.success('החיוב הנוסף נוצר בהצלחה');
+      setIsChargeDialogOpen(false);
+      resetChargeForm();
+      loadCharges();
+    } catch (error) {
+      console.error(error);
+      toast.error('אירעה שגיאה');
+    } finally {
+      setIsSavingCharge(false);
+    }
+  };
+
+  const handleDeleteCharge = async (charge: ChargeWithMember) => {
+    const confirmed = await confirm({
+      title: 'מחיקת חיוב',
+      description: 'האם למחוק את החיוב?',
+      confirmText: 'מחק',
+      cancelText: 'ביטול',
+      variant: 'destructive',
+    });
+    if (!confirmed) return;
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('extra_charges')
+      .delete()
+      .eq('id', charge.id);
+
+    if (error) {
+      toast.error('שגיאה במחיקה');
+      return;
+    }
+
+    toast.success('החיוב נמחק');
+    loadCharges();
+  };
+
+  const toggleChargePaid = async (charge: ChargeWithMember) => {
+    const supabase = createClient();
+    const newStatus = !charge.is_paid;
+
+    const { error } = await supabase
+      .from('extra_charges')
+      .update({
+        is_paid: newStatus,
+        paid_at: newStatus ? new Date().toISOString() : null,
+      } as never)
+      .eq('id', charge.id);
+
+    if (error) {
+      toast.error('שגיאה בעדכון');
+      return;
+    }
+
+    toast.success(newStatus ? 'סומן כשולם' : 'סומן כלא שולם');
+    loadCharges();
+  };
+
+  const filteredCharges = charges.filter(charge => {
+    if (chargeFilter === 'unpaid') return !charge.is_paid;
+    if (chargeFilter === 'paid') return charge.is_paid;
+    return true;
+  });
+
   const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const paidAmount = payments.filter(p => p.is_paid).reduce((sum, p) => sum + Number(p.amount), 0);
   const unpaidAmount = totalAmount - paidAmount;
+
+  const totalChargesUnpaid = charges.filter(c => !c.is_paid).reduce((sum, c) => sum + Number(c.amount), 0);
+  const totalChargesPaid = charges.filter(c => c.is_paid).reduce((sum, c) => sum + Number(c.amount), 0);
 
   if (isLoading) {
     return (
@@ -438,13 +590,28 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(255, 249, 196, 0.08) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">{t('payments.title')}</h1>
-            <p className="text-muted-foreground">{building?.name}</p>
-          </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('payments.title')}</h1>
+          <p className="text-muted-foreground">{building?.name}</p>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="monthly" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            תשלומים חודשיים
+          </TabsTrigger>
+          <TabsTrigger value="extra" className="flex items-center gap-2">
+            <CircleDollarSign className="h-4 w-4" />
+            חיובים נוספים
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Monthly Payments Tab */}
+        <TabsContent value="monthly" className="space-y-6 mt-6">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="w-full sm:w-48">
@@ -469,152 +636,74 @@ export default function PaymentsPage() {
               )}
             </Button>
           </div>
-        </div>
-      </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">סה״כ צפוי</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₪{totalAmount.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">שולם</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">₪{paidAmount.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">לא שולם</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">₪{unpaidAmount.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Summary Cards */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">סה״כ צפוי</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">₪{totalAmount.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">שולם</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">₪{paidAmount.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">לא שולם</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">₪{unpaidAmount.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Mobile Cards View */}
-      <div className="md:hidden space-y-3">
-        {payments.map((payment) => (
-          <Card key={payment.id}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold">דירה {payment.building_members?.apartment_number}</span>
-                    <Badge variant={payment.is_paid ? 'default' : 'destructive'}>
-                      {payment.is_paid ? t('payments.paid') : t('payments.unpaid')}
-                    </Badge>
-                  </div>
-                  <p className="font-medium">{payment.building_members?.full_name}</p>
-                  <p className="text-lg font-bold">₪{Number(payment.amount).toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {payment.payment_method === 'standing_order'
-                      ? t('tenants.standingOrder')
-                      : t('tenants.cash')}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {payment.is_paid ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => togglePayment(payment, false)}
-                    >
-                      <X className="h-4 w-4 ml-1" />
-                      בטל
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => togglePayment(payment, true)}
-                    >
-                      <Check className="h-4 w-4 ml-1" />
-                      שולם
-                    </Button>
-                  )}
-                  {payment.is_paid && (
-                    <Button variant="ghost" size="sm" onClick={() => generateReceipt(payment)}>
-                      <FileText className="h-4 w-4 ml-1" />
-                      אישור
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {payments.length === 0 && (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              אין תשלומים לחודש זה. לחץ על "צור תשלומים לחודש" ליצירת רשומות.
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Desktop Table View */}
-      <Card className="hidden md:block">
-        <CardHeader>
-          <CardTitle className="text-lg">רשימת תשלומים</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('tenants.apartment')}</TableHead>
-                <TableHead>{t('tenants.tenantName')}</TableHead>
-                <TableHead>{t('tenants.paymentMethod')}</TableHead>
-                <TableHead>{t('common.amount')}</TableHead>
-                <TableHead>{t('common.status')}</TableHead>
-                <TableHead>{t('common.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell className="font-medium">
-                    {payment.building_members?.apartment_number}
-                  </TableCell>
-                  <TableCell>{payment.building_members?.full_name}</TableCell>
-                  <TableCell>
-                    {payment.payment_method === 'standing_order'
-                      ? t('tenants.standingOrder')
-                      : t('tenants.cash')}
-                  </TableCell>
-                  <TableCell>₪{Number(payment.amount).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={payment.is_paid ? 'default' : 'destructive'}>
-                      {payment.is_paid ? t('payments.paid') : t('payments.unpaid')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
+          {/* Mobile Cards View */}
+          <div className="md:hidden space-y-3">
+            {payments.map((payment) => (
+              <Card key={payment.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold">דירה {payment.building_members?.apartment_number}</span>
+                        <Badge variant={payment.is_paid ? 'default' : 'destructive'}>
+                          {payment.is_paid ? t('payments.paid') : t('payments.unpaid')}
+                        </Badge>
+                      </div>
+                      <p className="font-medium">{payment.building_members?.full_name}</p>
+                      <p className="text-lg font-bold">₪{Number(payment.amount).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {payment.payment_method === 'standing_order'
+                          ? t('tenants.standingOrder')
+                          : t('tenants.cash')}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1">
                       {payment.is_paid ? (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => togglePayment(payment, false)}
                         >
                           <X className="h-4 w-4 ml-1" />
-                          בטל תשלום
+                          בטל
                         </Button>
                       ) : (
                         <Button
-                          variant="ghost"
+                          variant="default"
                           size="sm"
                           onClick={() => togglePayment(payment, true)}
                         >
                           <Check className="h-4 w-4 ml-1" />
-                          סמן כשולם
+                          שולם
                         </Button>
                       )}
                       {payment.is_paid && (
@@ -624,20 +713,371 @@ export default function PaymentsPage() {
                         </Button>
                       )}
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {payments.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    אין תשלומים לחודש זה. לחץ על "צור תשלומים לחודש" ליצירת רשומות.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {payments.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  אין תשלומים לחודש זה. לחץ על "צור תשלומים לחודש" ליצירת רשומות.
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <Card className="hidden md:block">
+            <CardHeader>
+              <CardTitle className="text-lg">רשימת תשלומים</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('tenants.apartment')}</TableHead>
+                    <TableHead>{t('tenants.tenantName')}</TableHead>
+                    <TableHead>{t('tenants.paymentMethod')}</TableHead>
+                    <TableHead>{t('common.amount')}</TableHead>
+                    <TableHead>{t('common.status')}</TableHead>
+                    <TableHead>{t('common.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-medium">
+                        {payment.building_members?.apartment_number}
+                      </TableCell>
+                      <TableCell>{payment.building_members?.full_name}</TableCell>
+                      <TableCell>
+                        {payment.payment_method === 'standing_order'
+                          ? t('tenants.standingOrder')
+                          : t('tenants.cash')}
+                      </TableCell>
+                      <TableCell>₪{Number(payment.amount).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={payment.is_paid ? 'default' : 'destructive'}>
+                          {payment.is_paid ? t('payments.paid') : t('payments.unpaid')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {payment.is_paid ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => togglePayment(payment, false)}
+                            >
+                              <X className="h-4 w-4 ml-1" />
+                              בטל תשלום
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => togglePayment(payment, true)}
+                            >
+                              <Check className="h-4 w-4 ml-1" />
+                              סמן כשולם
+                            </Button>
+                          )}
+                          {payment.is_paid && (
+                            <Button variant="ghost" size="sm" onClick={() => generateReceipt(payment)}>
+                              <FileText className="h-4 w-4 ml-1" />
+                              אישור
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {payments.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        אין תשלומים לחודש זה. לחץ על "צור תשלומים לחודש" ליצירת רשומות.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Extra Charges Tab */}
+        <TabsContent value="extra" className="space-y-6 mt-6">
+          <div className="flex justify-end">
+            <Dialog open={isChargeDialogOpen} onOpenChange={(open) => {
+              setIsChargeDialogOpen(open);
+              if (!open) resetChargeForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="ml-2 h-4 w-4" />
+                  חיוב חדש
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>יצירת חיוב נוסף</DialogTitle>
+                  <DialogDescription>
+                    הוספת דרישת תשלום מיוחדת לדייר
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleChargeSubmit}>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>דייר *</Label>
+                      <Select
+                        value={chargeFormData.member_id}
+                        onValueChange={(value) => setChargeFormData({ ...chargeFormData, member_id: value })}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="בחר דייר" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {members.map(member => (
+                            <SelectItem key={member.id} value={member.id}>
+                              דירה {member.apartment_number} - {member.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="charge_amount">סכום (₪) *</Label>
+                        <Input
+                          id="charge_amount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={chargeFormData.amount}
+                          onChange={(e) => setChargeFormData({ ...chargeFormData, amount: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="charge_date">תאריך *</Label>
+                        <Input
+                          id="charge_date"
+                          type="date"
+                          value={chargeFormData.charge_date}
+                          onChange={(e) => setChargeFormData({ ...chargeFormData, charge_date: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="charge_reason">סיבת החיוב *</Label>
+                      <Input
+                        id="charge_reason"
+                        value={chargeFormData.reason}
+                        onChange={(e) => setChargeFormData({ ...chargeFormData, reason: e.target.value })}
+                        placeholder="למשל: תיקון צנרת, השתתפות במעלית..."
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="charge_notes">הערות</Label>
+                      <Textarea
+                        id="charge_notes"
+                        value={chargeFormData.notes}
+                        onChange={(e) => setChargeFormData({ ...chargeFormData, notes: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsChargeDialogOpen(false)}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button type="submit" disabled={isSavingCharge || !chargeFormData.member_id}>
+                      {isSavingCharge ? <Loader2 className="h-4 w-4 animate-spin" /> : 'צור חיוב'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Summary */}
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">סה״כ חיובים</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{charges.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">ממתינים לתשלום</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">₪{totalChargesUnpaid.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">שולמו</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">₪{totalChargesPaid.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex gap-2">
+            <Button
+              variant={chargeFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setChargeFilter('all')}
+            >
+              הכל ({charges.length})
+            </Button>
+            <Button
+              variant={chargeFilter === 'unpaid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setChargeFilter('unpaid')}
+            >
+              ממתינים ({charges.filter(c => !c.is_paid).length})
+            </Button>
+            <Button
+              variant={chargeFilter === 'paid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setChargeFilter('paid')}
+            >
+              שולמו ({charges.filter(c => c.is_paid).length})
+            </Button>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="md:hidden space-y-3">
+            {filteredCharges.map((charge) => (
+              <Card key={charge.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          דירה {charge.building_members?.apartment_number}
+                        </span>
+                        <Badge variant={charge.is_paid ? 'default' : 'secondary'}>
+                          {charge.is_paid ? 'שולם' : 'ממתין'}
+                        </Badge>
+                      </div>
+                      <p className="text-lg font-bold">₪{Number(charge.amount).toLocaleString()}</p>
+                      <p className="text-sm">{charge.reason}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(charge.charge_date).toLocaleDateString('he-IL')}
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleChargePaid(charge)}
+                        title={charge.is_paid ? 'סמן כלא שולם' : 'סמן כשולם'}
+                      >
+                        {charge.is_paid ? <X className="h-4 w-4" /> : <Check className="h-4 w-4 text-green-600" />}
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteCharge(charge)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {filteredCharges.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  אין חיובים נוספים
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Table - Desktop */}
+          <Card className="hidden md:block">
+            <CardHeader>
+              <CardTitle className="text-lg">רשימת חיובים נוספים</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>דירה</TableHead>
+                    <TableHead>דייר</TableHead>
+                    <TableHead>סיבה</TableHead>
+                    <TableHead>תאריך</TableHead>
+                    <TableHead>סכום</TableHead>
+                    <TableHead>סטטוס</TableHead>
+                    <TableHead>פעולות</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCharges.map((charge) => (
+                    <TableRow key={charge.id}>
+                      <TableCell className="font-medium">
+                        {charge.building_members?.apartment_number}
+                      </TableCell>
+                      <TableCell>{charge.building_members?.full_name}</TableCell>
+                      <TableCell className="max-w-xs truncate">{charge.reason}</TableCell>
+                      <TableCell>
+                        {new Date(charge.charge_date).toLocaleDateString('he-IL')}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        ₪{Number(charge.amount).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={charge.is_paid ? 'default' : 'secondary'}>
+                          {charge.is_paid ? 'שולם' : 'ממתין'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleChargePaid(charge)}
+                            title={charge.is_paid ? 'סמן כלא שולם' : 'סמן כשולם'}
+                          >
+                            {charge.is_paid ? <X className="h-4 w-4" /> : <Check className="h-4 w-4 text-green-600" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteCharge(charge)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredCharges.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        אין חיובים נוספים
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

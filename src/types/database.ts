@@ -107,12 +107,14 @@ export interface Database {
           payment_day: number | null
           monthly_amount: number | null
           phone: string | null
+          phone2: string | null
           email: string | null
           notes: string | null
           storage_number: string | null
           parking_number: string | null
           parking_type: string | null
           ownership_type: OwnershipType
+          move_in_date: string | null
           created_at: string
         }
         Insert: {
@@ -128,12 +130,14 @@ export interface Database {
           payment_day?: number | null
           monthly_amount?: number | null
           phone?: string | null
+          phone2?: string | null
           email?: string | null
           notes?: string | null
           storage_number?: string | null
           parking_number?: string | null
           parking_type?: string | null
           ownership_type?: OwnershipType
+          move_in_date?: string | null
           created_at?: string
         }
         Update: {
@@ -149,12 +153,14 @@ export interface Database {
           payment_day?: number | null
           monthly_amount?: number | null
           phone?: string | null
+          phone2?: string | null
           email?: string | null
           notes?: string | null
           storage_number?: string | null
           parking_number?: string | null
           parking_type?: string | null
           ownership_type?: OwnershipType
+          move_in_date?: string | null
           created_at?: string
         }
       }

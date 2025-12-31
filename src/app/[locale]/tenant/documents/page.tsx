@@ -231,7 +231,7 @@ export default function TenantDocumentsPage() {
   }, {} as Record<string, Document[]>);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6" style={{ background: 'linear-gradient(135deg, rgba(215, 204, 200, 0.08) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold">מסמכים</h1>

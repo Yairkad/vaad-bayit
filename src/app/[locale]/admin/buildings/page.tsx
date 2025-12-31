@@ -771,9 +771,9 @@ export default function AdminBuildingsPage() {
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-muted-foreground shrink-0" />
-                    <span className="font-bold truncate">{building.address}</span>
+                  <div className="flex items-start gap-2">
+                    <Building2 className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="font-bold break-words line-clamp-2">{building.address}</span>
                   </div>
                   {building.city && (
                     <p className="text-sm text-muted-foreground truncate">{building.city}</p>
@@ -851,7 +851,7 @@ export default function AdminBuildingsPage() {
                   <TableCell>
                     <Building2 className="h-5 w-5 text-muted-foreground" />
                   </TableCell>
-                  <TableCell className="font-medium">{building.address}</TableCell>
+                  <TableCell className="font-medium max-w-xs break-words">{building.address}</TableCell>
                   <TableCell>{building.city || '-'}</TableCell>
                   <TableCell>{building.member_count}</TableCell>
                   <TableCell>

@@ -172,7 +172,7 @@ export default function AdminRequestsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.06) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">פניות חדשות</h1>
