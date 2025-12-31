@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useBuilding } from '@/contexts/BuildingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -43,9 +44,8 @@ type IssueWithReporter = Issue & {
 
 export default function IssuesPage() {
   const t = useTranslations();
+  const { currentBuilding } = useBuilding();
   const [issues, setIssues] = useState<IssueWithReporter[]>([]);
-  const [buildingId, setBuildingId] = useState<string | null>(null);
-  const [building, setBuilding] = useState<Building | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -61,37 +61,31 @@ export default function IssuesPage() {
   const [inProgressIssue, setInProgressIssue] = useState<Issue | null>(null);
   const [inProgressResponse, setInProgressResponse] = useState('');
 
+  // Get building info from context
+  const buildingId = currentBuilding?.id || null;
+  const building = currentBuilding;
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentBuilding?.id) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentBuilding?.id]);
 
   const loadData = async () => {
+    if (!currentBuilding?.id) return;
+
+    setIsLoading(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
+    const { data: issuesData } = await supabase
+      .from('issues')
+      .select('*, building_members(full_name, apartment_number)')
+      .eq('building_id', currentBuilding.id)
+      .order('created_at', { ascending: false });
 
-    type MemberWithBuilding = BuildingMember & { buildings: Building | null };
-    const { data: membership } = await supabase
-      .from('building_members')
-      .select('building_id, buildings(*), id')
-      .eq('user_id', user.id)
-      .eq('role', 'committee')
-      .single() as { data: MemberWithBuilding | null };
-
-    if (membership?.building_id) {
-      setBuildingId(membership.building_id);
-      setBuilding(membership.buildings as Building);
-
-      const { data: issuesData } = await supabase
-        .from('issues')
-        .select('*, building_members(full_name, apartment_number)')
-        .eq('building_id', membership.building_id)
-        .order('created_at', { ascending: false });
-
-      setIssues((issuesData as IssueWithReporter[]) || []);
-    }
-
+    setIssues((issuesData as IssueWithReporter[]) || []);
     setIsLoading(false);
   };
 

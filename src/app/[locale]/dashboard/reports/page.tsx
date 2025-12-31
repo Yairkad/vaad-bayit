@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useBuilding } from '@/contexts/BuildingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -49,18 +50,25 @@ const getCategoryLabel = (category: string) => CATEGORY_LABELS[category] || cate
 
 export default function ReportsPage() {
   const t = useTranslations();
+  const { currentBuilding } = useBuilding();
   const [isLoading, setIsLoading] = useState(true);
-  const [buildingId, setBuildingId] = useState<string | null>(null);
-  const [building, setBuilding] = useState<Building | null>(null);
   const [members, setMembers] = useState<BuildingMember[]>([]);
   const [payments, setPayments] = useState<PaymentWithMember[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
+  // Get building info from context
+  const buildingId = currentBuilding?.id || null;
+  const building = currentBuilding;
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentBuilding?.id) {
+      loadMembers();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentBuilding?.id]);
 
   useEffect(() => {
     if (buildingId) {
@@ -68,32 +76,18 @@ export default function ReportsPage() {
     }
   }, [buildingId, selectedYear]);
 
-  const loadData = async () => {
+  const loadMembers = async () => {
+    if (!currentBuilding?.id) return;
+
+    setIsLoading(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
-
-    type MemberWithBuilding = BuildingMember & { buildings: Building | null };
-    const { data: membership } = await supabase
+    const { data: membersData } = await supabase
       .from('building_members')
-      .select('building_id, buildings(*)')
-      .eq('user_id', user.id)
-      .eq('role', 'committee')
-      .single() as { data: MemberWithBuilding | null };
+      .select('*')
+      .eq('building_id', currentBuilding.id);
 
-    if (membership?.building_id) {
-      setBuildingId(membership.building_id);
-      setBuilding(membership.buildings as Building);
-
-      const { data: membersData } = await supabase
-        .from('building_members')
-        .select('*')
-        .eq('building_id', membership.building_id);
-
-      setMembers(membersData || []);
-    }
-
+    setMembers(membersData || []);
     setIsLoading(false);
   };
 

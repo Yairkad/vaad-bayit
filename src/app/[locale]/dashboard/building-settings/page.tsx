@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useBuilding } from '@/contexts/BuildingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,13 +19,12 @@ type MemberWithBuilding = BuildingMember & { buildings: Building | null };
 export default function BuildingSettingsPage() {
   const t = useTranslations();
   const router = useRouter();
+  const { currentBuilding, refreshBuildings } = useBuilding();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  const [membership, setMembership] = useState<MemberWithBuilding | null>(null);
-  const [building, setBuilding] = useState<Building | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -39,46 +39,29 @@ export default function BuildingSettingsPage() {
   const [newParkingName, setNewParkingName] = useState('');
   const [newParkingType, setNewParkingType] = useState('');
 
+  // Get building info from context
+  const building = currentBuilding;
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentBuilding) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentBuilding?.id]);
 
   const loadData = async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!currentBuilding) return;
 
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    // Load building membership
-    const { data: membershipData } = await supabase
-      .from('building_members')
-      .select('*, buildings(*)')
-      .eq('user_id', user.id)
-      .single() as { data: MemberWithBuilding | null };
-
-    if (!membershipData || membershipData.role !== 'committee') {
-      router.push('/dashboard');
-      return;
-    }
-
-    setMembership(membershipData);
-
-    if (membershipData.buildings) {
-      const b = membershipData.buildings;
-      setBuilding(b);
-      setFormData({
-        name: b.name || '',
-        address: b.address || '',
-        city: b.city || '',
-        monthly_fee: b.monthly_fee?.toString() || '',
-        opening_balance: b.opening_balance?.toString() || '',
-      });
-      setLogoPreview(b.logo_url || null);
-      setParkingLots((b.parking_lots as ParkingLot[]) || []);
-    }
+    setFormData({
+      name: currentBuilding.name || '',
+      address: currentBuilding.address || '',
+      city: currentBuilding.city || '',
+      monthly_fee: currentBuilding.monthly_fee?.toString() || '',
+      opening_balance: currentBuilding.opening_balance?.toString() || '',
+    });
+    setLogoPreview(currentBuilding.logo_url || null);
+    setParkingLots((currentBuilding.parking_lots as ParkingLot[]) || []);
 
     setIsLoading(false);
   };

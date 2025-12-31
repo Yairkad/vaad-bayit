@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useBuilding } from '@/contexts/BuildingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -64,9 +65,8 @@ const CATEGORIES = [
 export default function DocumentsPage() {
   const t = useTranslations();
   const confirm = useConfirm();
+  const { currentBuilding } = useBuilding();
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [buildingId, setBuildingId] = useState<string | null>(null);
-  const [building, setBuilding] = useState<Building | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -79,36 +79,31 @@ export default function DocumentsPage() {
     visible_to_tenants: true,
   });
 
+  // Get building info from context
+  const buildingId = currentBuilding?.id || null;
+  const building = currentBuilding;
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentBuilding?.id) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentBuilding?.id]);
 
   const loadData = async () => {
+    if (!currentBuilding?.id) return;
+
+    setIsLoading(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
+    const { data: docsData } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('building_id', currentBuilding.id)
+      .order('created_at', { ascending: false });
 
-    const { data: membership } = await supabase
-      .from('building_members')
-      .select('building_id, buildings(*)')
-      .eq('user_id', user.id)
-      .eq('role', 'committee')
-      .single() as { data: MemberWithBuilding | null };
-
-    if (membership?.building_id) {
-      setBuildingId(membership.building_id);
-      setBuilding(membership.buildings);
-
-      const { data: docsData } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('building_id', membership.building_id)
-        .order('created_at', { ascending: false });
-
-      setDocuments(docsData || []);
-    }
-
+    setDocuments(docsData || []);
     setIsLoading(false);
   };
 

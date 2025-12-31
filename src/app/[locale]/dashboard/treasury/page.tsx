@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { useBuilding } from '@/contexts/BuildingContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,9 +23,8 @@ import type { Building, BuildingMember } from '@/types/database';
 
 export default function TreasuryPage() {
   const t = useTranslations();
+  const { currentBuilding } = useBuilding();
   const [isLoading, setIsLoading] = useState(true);
-  const [buildingId, setBuildingId] = useState<string | null>(null);
-  const [building, setBuilding] = useState<Building | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [newBalance, setNewBalance] = useState('');
@@ -35,55 +35,49 @@ export default function TreasuryPage() {
   const [currentBalance, setCurrentBalance] = useState(0);
   const [openingBalance, setOpeningBalance] = useState(0);
 
+  // Get building info from context
+  const buildingId = currentBuilding?.id || null;
+  const building = currentBuilding;
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentBuilding?.id) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentBuilding?.id]);
 
   const loadData = async () => {
+    if (!currentBuilding?.id) return;
+
+    setIsLoading(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
+    const startingBalance = Number(currentBuilding?.opening_balance || 0);
+    setOpeningBalance(startingBalance);
 
-    // Get user's building membership
-    type MemberWithBuilding = BuildingMember & { buildings: Building | null };
-    const { data: membership } = await supabase
-      .from('building_members')
-      .select('building_id, buildings(*)')
-      .eq('user_id', user.id)
-      .eq('role', 'committee')
-      .single() as { data: MemberWithBuilding | null };
+    // Calculate totals from all time
+    // Get all payments (income)
+    const { data: payments } = await supabase
+      .from('payments')
+      .select('amount, is_paid')
+      .eq('building_id', currentBuilding.id)
+      .eq('is_paid', true) as { data: { amount: number; is_paid: boolean }[] | null };
 
-    if (membership?.building_id) {
-      setBuildingId(membership.building_id);
-      const buildingData = membership.buildings as Building;
-      setBuilding(buildingData);
-      const startingBalance = Number(buildingData?.opening_balance || 0);
-      setOpeningBalance(startingBalance);
+    const income = (payments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+    setTotalIncome(income);
 
-      // Calculate totals from all time
-      // Get all payments (income)
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('amount, is_paid')
-        .eq('building_id', membership.building_id)
-        .eq('is_paid', true) as { data: { amount: number; is_paid: boolean }[] | null };
+    // Get all expenses
+    const { data: expenses } = await supabase
+      .from('expenses')
+      .select('amount')
+      .eq('building_id', currentBuilding.id) as { data: { amount: number }[] | null };
 
-      const income = (payments || []).reduce((sum, p) => sum + Number(p.amount), 0);
-      setTotalIncome(income);
+    const expenseTotal = (expenses || []).reduce((sum, e) => sum + Number(e.amount), 0);
+    setTotalExpenses(expenseTotal);
 
-      // Get all expenses
-      const { data: expenses } = await supabase
-        .from('expenses')
-        .select('amount')
-        .eq('building_id', membership.building_id) as { data: { amount: number }[] | null };
-
-      const expenseTotal = (expenses || []).reduce((sum, e) => sum + Number(e.amount), 0);
-      setTotalExpenses(expenseTotal);
-
-      // Calculate balance including opening balance
-      setCurrentBalance(startingBalance + income - expenseTotal);
-    }
+    // Calculate balance including opening balance
+    setCurrentBalance(startingBalance + income - expenseTotal);
 
     setIsLoading(false);
   };

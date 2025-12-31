@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useBuilding } from '@/contexts/BuildingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -31,9 +32,8 @@ type MessageWithResponses = Message & {
 export default function MessagesPage() {
   const t = useTranslations();
   const confirm = useConfirm();
+  const { currentBuilding } = useBuilding();
   const [messages, setMessages] = useState<MessageWithResponses[]>([]);
-  const [buildingId, setBuildingId] = useState<string | null>(null);
-  const [building, setBuilding] = useState<Building | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -49,55 +49,50 @@ export default function MessagesPage() {
     send_email: false,
   });
 
+  // Get building info from context
+  const buildingId = currentBuilding?.id || null;
+  const building = currentBuilding;
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentBuilding?.id) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentBuilding?.id]);
 
   const loadData = async () => {
+    if (!currentBuilding?.id) return;
+
+    setIsLoading(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
+    // Load messages
+    const { data: messagesData } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('building_id', currentBuilding.id)
+      .order('created_at', { ascending: false }) as { data: Message[] | null };
 
-    type MemberWithBuilding = BuildingMember & { buildings: Building | null };
-    const { data: membership } = await supabase
-      .from('building_members')
-      .select('building_id, buildings(*)')
-      .eq('user_id', user.id)
-      .eq('role', 'committee')
-      .single() as { data: MemberWithBuilding | null };
-
-    if (membership?.building_id) {
-      setBuildingId(membership.building_id);
-      setBuilding(membership.buildings as Building);
-
-      // Load messages
-      const { data: messagesData } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('building_id', membership.building_id)
-        .order('created_at', { ascending: false }) as { data: Message[] | null };
-
-      // Load responses for each message
-      const messagesWithResponses: MessageWithResponses[] = [];
-      for (const message of messagesData || []) {
-        // Check if message requires response (has yes_label and no_label)
-        if (message.yes_label && message.no_label) {
-          const { data: responses } = await supabase
-            .from('message_responses')
-            .select('*, building_members(*)')
-            .eq('message_id', message.id);
-          messagesWithResponses.push({
-            ...message,
-            responses: responses as (MessageResponse & { building_members: BuildingMember })[] || [],
-          });
-        } else {
-          messagesWithResponses.push({ ...message, responses: [] });
-        }
+    // Load responses for each message
+    const messagesWithResponses: MessageWithResponses[] = [];
+    for (const message of messagesData || []) {
+      // Check if message requires response (has yes_label and no_label)
+      if (message.yes_label && message.no_label) {
+        const { data: responses } = await supabase
+          .from('message_responses')
+          .select('*, building_members(*)')
+          .eq('message_id', message.id);
+        messagesWithResponses.push({
+          ...message,
+          responses: responses as (MessageResponse & { building_members: BuildingMember })[] || [],
+        });
+      } else {
+        messagesWithResponses.push({ ...message, responses: [] });
       }
-
-      setMessages(messagesWithResponses);
     }
+
+    setMessages(messagesWithResponses);
 
     setIsLoading(false);
   };
