@@ -107,7 +107,7 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-72 p-0 flex flex-col">
+          <SheetContent side="right" className="w-64 p-0 flex flex-col">
             {/* Logo */}
             <div className="p-6 border-b">
               <Link
@@ -158,25 +158,16 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
             </nav>
 
             {/* Footer */}
-            <div className="p-4 border-t space-y-1 mt-auto">
-              <Link
-                href={settingsHref}
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full"
-              >
-                <Settings className="h-5 w-5" />
-                {tNav('settings')}
-              </Link>
-              <button
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors w-full"
-                onClick={() => {
-                  setIsOpen(false);
-                  handleLogout();
-                }}
-              >
-                <LogOut className="h-5 w-5" />
-                התנתקות
-              </button>
+            <div className="p-3 border-t mt-auto bg-muted/30">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>גירסה 1.0.0</span>
+                <a
+                  href="mailto:support@vaad-bayit.co.il?subject=דיווח באג / הצעת שיפור"
+                  className="text-primary hover:underline"
+                >
+                  דווח על באג
+                </a>
+              </div>
             </div>
           </SheetContent>
         </Sheet>

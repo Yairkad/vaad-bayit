@@ -294,27 +294,23 @@ export default function TenantsPage() {
 
   return (
     <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(220, 252, 231, 0.6) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">{t('tenants.title')}</h1>
-          <p className="text-muted-foreground">{buildingName}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="חפש דירה, שם, טלפון..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10 w-64"
-            />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl sm:text-3xl font-bold">{t('tenants.title')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{buildingName}</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm" className="sm:hidden">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogTrigger asChild>
+              <Button className="hidden sm:flex">
                 <Plus className="ml-2 h-4 w-4" />
                 {t('tenants.addTenant')}
               </Button>
@@ -574,6 +570,15 @@ export default function TenantsPage() {
               </form>
             </DialogContent>
           </Dialog>
+        </div>
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="חפש דירה, שם, טלפון..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pr-10 w-full sm:w-64"
+          />
         </div>
       </div>
 

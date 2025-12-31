@@ -275,18 +275,9 @@ export default function BuildingSettingsPage() {
 
   return (
     <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(244, 244, 245, 0.6) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">הגדרות בניין</h1>
-          <p className="text-muted-foreground">ניהול פרטי הבניין והגדרות תשלום</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => router.push('/dashboard/settings')}
-        >
-          <ArrowRight className="h-4 w-4 ml-2" />
-          חזרה להגדרות
-        </Button>
+      <div>
+        <h1 className="text-xl sm:text-3xl font-bold">הגדרות בניין</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">ניהול פרטי הבניין והגדרות תשלום</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

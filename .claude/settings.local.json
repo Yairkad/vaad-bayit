@@ -18,7 +18,14 @@
       "Bash(cat:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vercel logs:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add legal pages \\(terms, privacy, accessibility\\)\n\n- Add Terms of Service page \\(/terms\\)\n- Add Privacy Policy page \\(/privacy\\)\n- Add Accessibility Statement page \\(/accessibility\\)\n- Update footer with links to legal pages and contact\n- Center dialog headers in contact form\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: cleanup unused files and fix contact button\n\n- Remove unused SVG files \\(file, globe, next, vercel, window\\)\n- Remove unused ContactForm component\n- Fix footer contact button to open dialog\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(ls -la \"c:\\\\Users\\\\יאיר קדוש\\\\VAAD\\\\src\\\\types\"\" 2>&1 || echo \"Types directory not found \")",
+      "Bash(grep:*)",
+      "Bash(git diff:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add extra charges, shared expenses, and building settings\n\n- Add extra_charges table for partial/exceptional tenant charges\n- Add shared_buildings_count field to expenses for multi-building expenses\n- Create building settings page with logo upload support\n- Add extra charges management page for committee\n- Update tenant payments view to show extra charges\n- Add new document categories \\(invoice, receipt, bank_statement, report\\)\n- Include building logo in payment receipts\n- Add receipt/invoice upload to expenses\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(cd:*)"
     ]
   }
 }
