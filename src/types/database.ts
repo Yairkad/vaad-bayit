@@ -16,6 +16,12 @@ export type MessageType = 'announcement' | 'meeting' | 'vote';
 export type ResponseType = 'yes' | 'no';
 export type ExpenseRecurrence = 'one_time' | 'monthly' | 'bi_monthly';
 export type ChargePaymentMethod = 'cash' | 'transfer' | 'check' | 'other';
+export type OwnershipType = 'owner' | 'renter';
+
+export interface ParkingLot {
+  name: string;
+  type: string;
+}
 
 export interface Database {
   public: {
@@ -55,6 +61,7 @@ export interface Database {
           monthly_fee: number
           opening_balance: number
           logo_url: string | null
+          parking_lots: ParkingLot[]
           is_approved: boolean
           created_by: string | null
           created_at: string
@@ -67,6 +74,7 @@ export interface Database {
           monthly_fee?: number
           opening_balance?: number
           logo_url?: string | null
+          parking_lots?: ParkingLot[]
           is_approved?: boolean
           created_by?: string | null
           created_at?: string
@@ -79,6 +87,7 @@ export interface Database {
           monthly_fee?: number
           opening_balance?: number
           logo_url?: string | null
+          parking_lots?: ParkingLot[]
           is_approved?: boolean
           created_by?: string | null
           created_at?: string
@@ -100,6 +109,10 @@ export interface Database {
           phone: string | null
           email: string | null
           notes: string | null
+          storage_number: string | null
+          parking_number: string | null
+          parking_type: string | null
+          ownership_type: OwnershipType
           created_at: string
         }
         Insert: {
@@ -117,6 +130,10 @@ export interface Database {
           phone?: string | null
           email?: string | null
           notes?: string | null
+          storage_number?: string | null
+          parking_number?: string | null
+          parking_type?: string | null
+          ownership_type?: OwnershipType
           created_at?: string
         }
         Update: {
@@ -134,6 +151,10 @@ export interface Database {
           phone?: string | null
           email?: string | null
           notes?: string | null
+          storage_number?: string | null
+          parking_number?: string | null
+          parking_type?: string | null
+          ownership_type?: OwnershipType
           created_at?: string
         }
       }

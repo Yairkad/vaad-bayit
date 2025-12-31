@@ -35,8 +35,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, UserCheck, UserX, Loader2 } from 'lucide-react';
-import type { BuildingMember, Building, Profile } from '@/types/database';
+import { Plus, Pencil, Trash2, UserCheck, UserX, Loader2, Search, Car, Package, Home } from 'lucide-react';
+import type { BuildingMember, Building, Profile, ParkingLot, OwnershipType } from '@/types/database';
 
 type MemberWithProfile = BuildingMember & {
   buildings?: Building;
@@ -49,10 +49,12 @@ export default function TenantsPage() {
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [buildingId, setBuildingId] = useState<string | null>(null);
   const [buildingName, setBuildingName] = useState<string>('');
+  const [parkingLots, setParkingLots] = useState<ParkingLot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<BuildingMember | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -65,6 +67,10 @@ export default function TenantsPage() {
     payment_day: '',
     monthly_amount: '',
     notes: '',
+    storage_number: '',
+    parking_number: '',
+    parking_type: '',
+    ownership_type: 'owner' as OwnershipType,
   });
 
   useEffect(() => {
@@ -88,7 +94,9 @@ export default function TenantsPage() {
 
     if (membership?.building_id) {
       setBuildingId(membership.building_id);
-      setBuildingName((membership.buildings as Building)?.name || '');
+      const building = membership.buildings as Building;
+      setBuildingName(building?.name || '');
+      setParkingLots((building?.parking_lots as ParkingLot[]) || []);
 
       // Load all members of this building with profiles for email
       const { data: membersData } = await supabase
@@ -115,6 +123,10 @@ export default function TenantsPage() {
       payment_day: '',
       monthly_amount: '',
       notes: '',
+      storage_number: '',
+      parking_number: '',
+      parking_type: '',
+      ownership_type: 'owner',
     });
     setEditingMember(null);
   };
@@ -132,6 +144,10 @@ export default function TenantsPage() {
       payment_day: member.payment_day?.toString() || '',
       monthly_amount: member.monthly_amount?.toString() || '',
       notes: member.notes || '',
+      storage_number: member.storage_number || '',
+      parking_number: member.parking_number || '',
+      parking_type: member.parking_type || '',
+      ownership_type: (member.ownership_type as OwnershipType) || 'owner',
     });
     setIsDialogOpen(true);
   };
@@ -159,6 +175,10 @@ export default function TenantsPage() {
             payment_day: formData.payment_day ? parseInt(formData.payment_day) : null,
             monthly_amount: formData.monthly_amount ? parseFloat(formData.monthly_amount) : null,
             notes: formData.notes || null,
+            storage_number: formData.storage_number || null,
+            parking_number: formData.parking_number || null,
+            parking_type: formData.parking_type || null,
+            ownership_type: formData.ownership_type,
           } as never)
           .eq('id', editingMember.id);
 
@@ -180,6 +200,10 @@ export default function TenantsPage() {
             payment_day: formData.payment_day ? parseInt(formData.payment_day) : null,
             monthly_amount: formData.monthly_amount ? parseFloat(formData.monthly_amount) : null,
             notes: formData.notes || null,
+            storage_number: formData.storage_number || null,
+            parking_number: formData.parking_number || null,
+            parking_type: formData.parking_type || null,
+            ownership_type: formData.ownership_type,
           } as never);
 
         if (error) throw error;
@@ -222,6 +246,18 @@ export default function TenantsPage() {
     loadData();
   };
 
+  // Filter members by search query (apartment, name, storage, parking)
+  const filteredMembers = members.filter(member => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      member.apartment_number.toLowerCase().includes(query) ||
+      member.full_name.toLowerCase().includes(query) ||
+      (member.storage_number && member.storage_number.toLowerCase().includes(query)) ||
+      (member.parking_number && member.parking_number.toLowerCase().includes(query))
+    );
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -249,7 +285,17 @@ export default function TenantsPage() {
           <h1 className="text-2xl sm:text-3xl font-bold">{t('tenants.title')}</h1>
           <p className="text-muted-foreground">{buildingName}</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="חפש דירה, שם, מחסן או חניה..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-10 w-64"
+            />
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
@@ -390,6 +436,78 @@ export default function TenantsPage() {
                   </>
                 )}
 
+                {/* Ownership type */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    סוג בעלות
+                  </Label>
+                  <Select
+                    value={formData.ownership_type}
+                    onValueChange={(value: OwnershipType) =>
+                      setFormData({ ...formData, ownership_type: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="owner">בעל הדירה</SelectItem>
+                      <SelectItem value="renter">שוכר</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Storage and Parking */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="storage_number" className="flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      מספר מחסן
+                    </Label>
+                    <Input
+                      id="storage_number"
+                      value={formData.storage_number}
+                      onChange={(e) => setFormData({ ...formData, storage_number: e.target.value })}
+                      placeholder="למשל: 5"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="parking_number" className="flex items-center gap-2">
+                      <Car className="h-4 w-4" />
+                      מספר חניה
+                    </Label>
+                    <Input
+                      id="parking_number"
+                      value={formData.parking_number}
+                      onChange={(e) => setFormData({ ...formData, parking_number: e.target.value })}
+                      placeholder="למשל: 12"
+                    />
+                  </div>
+                </div>
+
+                {/* Parking type - only shown if building has multiple parking lots */}
+                {parkingLots.length > 1 && (
+                  <div className="space-y-2">
+                    <Label>סוג חניון</Label>
+                    <Select
+                      value={formData.parking_type}
+                      onValueChange={(value) => setFormData({ ...formData, parking_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="בחר סוג חניון" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {parkingLots.map((lot) => (
+                          <SelectItem key={lot.type} value={lot.type}>
+                            {lot.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="notes">{t('common.notes')}</Label>
                   <Textarea
@@ -415,11 +533,12 @@ export default function TenantsPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Mobile Cards View */}
       <div className="md:hidden space-y-3">
-        {members.map((member) => (
+        {filteredMembers.map((member) => (
           <Card key={member.id}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -488,7 +607,7 @@ export default function TenantsPage() {
       <Card className="hidden md:block">
         <CardHeader>
           <CardTitle className="text-lg">
-            {members.length} דיירים בבניין
+            {filteredMembers.length} דיירים {searchQuery && `(מתוך ${members.length})`}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -497,37 +616,44 @@ export default function TenantsPage() {
               <TableRow>
                 <TableHead>{t('tenants.apartment')}</TableHead>
                 <TableHead>{t('tenants.tenantName')}</TableHead>
+                <TableHead>בעלות</TableHead>
                 <TableHead>{t('auth.phone')}</TableHead>
-                <TableHead>{t('auth.email')}</TableHead>
-                <TableHead>תפקיד</TableHead>
-                <TableHead>{t('tenants.paymentMethod')}</TableHead>
+                <TableHead>מחסן</TableHead>
+                <TableHead>חניה</TableHead>
                 <TableHead>משתמש</TableHead>
                 <TableHead>{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {members.map((member) => (
+              {filteredMembers.map((member) => (
                 <TableRow key={member.id}>
                   <TableCell className="font-medium">{member.apartment_number}</TableCell>
-                  <TableCell>{member.full_name}</TableCell>
-                  <TableCell dir="ltr" className="text-left">{member.phone || '-'}</TableCell>
-                  <TableCell>{member.profiles?.email || member.email || '-'}</TableCell>
                   <TableCell>
-                    <Badge variant={member.role === 'committee' ? 'default' : 'secondary'}>
-                      {member.role === 'committee' ? 'ועד' : 'דייר'}
-                    </Badge>
+                    <div className="flex flex-col">
+                      <span>{member.full_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {member.role === 'committee' ? 'ועד' : 'דייר'}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {member.payment_method === 'standing_order' ? (
-                      <span className="flex items-center gap-1">
-                        {t('tenants.standingOrder')}
-                        {member.standing_order_active && (
-                          <Badge variant="outline" className="text-green-600 border-green-600">פעיל</Badge>
+                    <Badge variant={member.ownership_type === 'renter' ? 'secondary' : 'outline'}>
+                      {member.ownership_type === 'renter' ? 'שוכר' : 'בעלים'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell dir="ltr" className="text-left">{member.phone || '-'}</TableCell>
+                  <TableCell>{member.storage_number || '-'}</TableCell>
+                  <TableCell>
+                    {member.parking_number ? (
+                      <span>
+                        {member.parking_number}
+                        {member.parking_type && parkingLots.length > 1 && (
+                          <span className="text-xs text-muted-foreground mr-1">
+                            ({parkingLots.find(p => p.type === member.parking_type)?.name || member.parking_type})
+                          </span>
                         )}
                       </span>
-                    ) : (
-                      t('tenants.cash')
-                    )}
+                    ) : '-'}
                   </TableCell>
                   <TableCell>
                     {member.user_id ? (
@@ -556,10 +682,10 @@ export default function TenantsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {members.length === 0 && (
+              {filteredMembers.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    אין דיירים. לחץ על "הוסף דייר" להוספת הדייר הראשון.
+                    {searchQuery ? 'לא נמצאו תוצאות לחיפוש' : 'אין דיירים. לחץ על "הוסף דייר" להוספת הדייר הראשון.'}
                   </TableCell>
                 </TableRow>
               )}

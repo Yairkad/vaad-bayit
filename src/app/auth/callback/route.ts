@@ -12,8 +12,9 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // If this is a password reset, redirect to reset-password page
-      if (type === 'recovery') {
+      // If this is a password reset or invite, redirect to reset-password page
+      // For invites, user needs to set their password
+      if (type === 'recovery' || type === 'invite' || type === 'magiclink') {
         return NextResponse.redirect(`${origin}/he/reset-password`);
       }
 

@@ -79,7 +79,7 @@ export async function POST(request: Request) {
           data: {
             full_name,
           },
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/he/login`,
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?type=invite`,
         }
       );
 

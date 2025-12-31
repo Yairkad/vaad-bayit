@@ -85,6 +85,7 @@ export function Header({ userName, buildingName, userRole = 'committee' }: Heade
     { href: '/dashboard/documents', icon: FileText, label: tNav('documents') },
     { href: '/dashboard/reports', icon: BarChart3, label: tNav('reports') },
     { href: '/dashboard/invites', icon: Link2, label: 'קישורי הזמנה' },
+    { href: '/dashboard/building-settings', icon: Building2, label: 'הגדרות בניין' },
   ];
 
   const tenantLinks = [

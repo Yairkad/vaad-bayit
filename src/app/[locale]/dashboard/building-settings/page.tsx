@@ -8,9 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, ArrowRight, Building2, Image as ImageIcon, Upload, Trash2, CreditCard, MapPin } from 'lucide-react';
+import { Loader2, ArrowRight, Building2, Image as ImageIcon, Upload, Trash2, CreditCard, MapPin, Car, Plus, X } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
-import type { Building, BuildingMember } from '@/types/database';
+import type { Building, BuildingMember, ParkingLot } from '@/types/database';
 import Image from 'next/image';
 
 type MemberWithBuilding = BuildingMember & { buildings: Building | null };
@@ -34,6 +34,10 @@ export default function BuildingSettingsPage() {
     monthly_fee: '',
     opening_balance: '',
   });
+
+  const [parkingLots, setParkingLots] = useState<ParkingLot[]>([]);
+  const [newParkingName, setNewParkingName] = useState('');
+  const [newParkingType, setNewParkingType] = useState('');
 
   useEffect(() => {
     loadData();
@@ -73,6 +77,7 @@ export default function BuildingSettingsPage() {
         opening_balance: b.opening_balance?.toString() || '',
       });
       setLogoPreview(b.logo_url || null);
+      setParkingLots((b.parking_lots as ParkingLot[]) || []);
     }
 
     setIsLoading(false);
@@ -107,6 +112,48 @@ export default function BuildingSettingsPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const addParkingLot = async () => {
+    if (!newParkingName.trim() || !newParkingType.trim() || !building) return;
+
+    const updatedLots = [...parkingLots, { name: newParkingName.trim(), type: newParkingType.trim() }];
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('buildings')
+      .update({ parking_lots: updatedLots } as never)
+      .eq('id', building.id);
+
+    if (error) {
+      toast.error('שגיאה בהוספת חניון');
+      return;
+    }
+
+    setParkingLots(updatedLots);
+    setNewParkingName('');
+    setNewParkingType('');
+    toast.success('החניון נוסף בהצלחה');
+  };
+
+  const removeParkingLot = async (index: number) => {
+    if (!building) return;
+
+    const updatedLots = parkingLots.filter((_, i) => i !== index);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('buildings')
+      .update({ parking_lots: updatedLots } as never)
+      .eq('id', building.id);
+
+    if (error) {
+      toast.error('שגיאה בהסרת חניון');
+      return;
+    }
+
+    setParkingLots(updatedLots);
+    toast.success('החניון הוסר');
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -347,6 +394,81 @@ export default function BuildingSettingsPage() {
                 )}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Parking Lots Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Car className="h-5 w-5" />
+              הגדרות חניונים
+            </CardTitle>
+            <CardDescription>
+              הגדר את סוגי החניונים בבניין (למשל: עליון, תחתון, מקורה)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Existing parking lots */}
+            {parkingLots.length > 0 && (
+              <div className="space-y-2">
+                <Label>חניונים קיימים</Label>
+                <div className="space-y-2">
+                  {parkingLots.map((lot, index) => (
+                    <div key={index} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
+                      <div>
+                        <span className="font-medium">{lot.name}</span>
+                        <span className="text-muted-foreground text-sm mr-2">({lot.type})</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeParkingLot(index)}
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add new parking lot */}
+            <div className="space-y-2 border-t pt-4">
+              <Label>הוסף חניון חדש</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="שם החניון (למשל: חניון עליון)"
+                  value={newParkingName}
+                  onChange={(e) => setNewParkingName(e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="סוג (למשל: upper)"
+                  value={newParkingType}
+                  onChange={(e) => setNewParkingType(e.target.value)}
+                  className="w-32"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addParkingLot}
+                  disabled={!newParkingName.trim() || !newParkingType.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                הסוג משמש לזיהוי פנימי. דוגמאות: upper, lower, covered, external
+              </p>
+            </div>
+
+            {parkingLots.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                אין חניונים מוגדרים. הוסף חניון כדי לאפשר לדיירים לציין סוג חניה.
+              </p>
+            )}
           </CardContent>
         </Card>
 
