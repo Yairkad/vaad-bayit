@@ -9,6 +9,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -124,6 +125,9 @@ export function BugReportDialog({ trigger }: BugReportDialogProps) {
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         {submitted ? (
           <div className="py-12 text-center">
+            <VisuallyHidden>
+              <DialogTitle>הדיווח נשלח</DialogTitle>
+            </VisuallyHidden>
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">תודה על הדיווח!</h3>
             <p className="text-muted-foreground">נחזור אליך בהקדם</p>
