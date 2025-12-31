@@ -13,7 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import {
   Menu,
   Building2,
@@ -108,7 +109,10 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-64 p-0 flex flex-col bg-[#e8ecef]">
+          <SheetContent side="right" className="w-64 p-0 flex flex-col bg-[#e8ecef]" aria-describedby={undefined}>
+            <VisuallyHidden>
+              <SheetTitle>תפריט ניווט</SheetTitle>
+            </VisuallyHidden>
             {/* Logo */}
             <div className="p-5 border-b border-[#d1d5db]">
               <Link
