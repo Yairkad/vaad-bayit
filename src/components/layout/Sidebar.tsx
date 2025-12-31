@@ -14,15 +14,11 @@ import {
   FileText,
   BarChart3,
   Building2,
-  Settings,
-  LogOut,
   Link2,
   Inbox,
   Loader2,
   Wallet,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from '@/i18n/navigation';
 
 interface SidebarProps {
@@ -35,13 +31,6 @@ export function Sidebar({ userRole }: SidebarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
-
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
-  };
 
   const adminLinks = [
     { href: '/admin', icon: LayoutDashboard, label: t('dashboard'), color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' },
@@ -126,22 +115,16 @@ export function Sidebar({ userRole }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t space-y-1">
-        <Link
-          href={userRole === 'admin' ? '/admin/settings' : userRole === 'tenant' ? '/tenant/settings' : '/dashboard/settings'}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <Settings className="h-5 w-5" />
-          {t('settings')}
-        </Link>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 px-3 text-muted-foreground hover:text-foreground"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-5 w-5" />
-          התנתקות
-        </Button>
+      <div className="p-3 border-t mt-auto bg-muted/30">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>גירסה 1.0.0</span>
+          <a
+            href="mailto:support@vaad-bayit.co.il?subject=דיווח באג / הצעת שיפור"
+            className="text-primary hover:underline"
+          >
+            דווח על באג
+          </a>
+        </div>
       </div>
     </aside>
   );
