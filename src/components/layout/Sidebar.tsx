@@ -102,7 +102,6 @@ export function Sidebar({ userRole }: SidebarProps) {
                   ? cn(
                       link.activeBg,
                       'shadow-lg shadow-black/5',
-                      'border-l-0 -ml-[1px] rounded-l-none',
                       link.activeColor
                     )
                   : cn(
