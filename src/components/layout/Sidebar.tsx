@@ -34,12 +34,14 @@ export function Sidebar({ userRole }: SidebarProps) {
   const [isPending, startTransition] = useTransition();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  // Get building logo for committee members
+  // Get building info for committee members
   let buildingLogo: string | null = null;
+  let buildingName: string | null = null;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const { currentBuilding } = useBuilding();
     buildingLogo = currentBuilding?.logo_url || null;
+    buildingName = currentBuilding?.name || currentBuilding?.address || null;
   } catch {
     // Not inside BuildingProvider (admin/tenant) - use default logo
   }
@@ -85,7 +87,7 @@ export function Sidebar({ userRole }: SidebarProps) {
             alt="לוגו"
             className="h-9 w-9 rounded-lg object-cover"
           />
-          <span className="text-xl font-bold text-gray-800">ועד בית</span>
+          <span className="text-xl font-bold text-gray-800 truncate max-w-[160px]">{buildingName || 'ועד בית'}</span>
         </Link>
       </div>
 

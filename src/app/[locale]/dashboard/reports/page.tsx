@@ -29,7 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, TrendingUp, TrendingDown, Users, AlertTriangle, ChevronLeft, Download } from 'lucide-react';
+import { Loader2, FileText, TrendingUp, TrendingDown, Users, AlertTriangle, ChevronLeft, Download, Printer } from 'lucide-react';
 import type { Payment, Expense, BuildingMember, Building } from '@/types/database';
 
 type PaymentWithMember = Payment & { building_members: BuildingMember };
@@ -177,6 +177,201 @@ export default function ReportsPage() {
   };
 
   const selectedMonthData = getSelectedMonthData();
+
+  // Convert number to Hebrew letters (Gematria)
+  const toHebrewLetters = (num: number): string => {
+    const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+    const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+    const hundreds = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק'];
+
+    if (num === 15) return 'טו';
+    if (num === 16) return 'טז';
+
+    if (num < 10) return ones[num];
+    if (num < 100) return tens[Math.floor(num / 10)] + ones[num % 10];
+    if (num < 1000) return hundreds[Math.floor(num / 100)] + tens[Math.floor((num % 100) / 10)] + ones[num % 10];
+
+    const lastThree = num % 1000;
+    return hundreds[Math.floor(lastThree / 100)] + tens[Math.floor((lastThree % 100) / 10)] + ones[lastThree % 10];
+  };
+
+  const formatHebrewDate = (date: Date) => {
+    const hebrewDate = date.toLocaleDateString('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' });
+    const parts = hebrewDate.split(' ');
+    const dayNum = parseInt(parts[0]);
+    const month = parts[1];
+    const yearNum = parseInt(parts[2]);
+    const hebrewDay = toHebrewLetters(dayNum);
+    const hebrewYear = toHebrewLetters(yearNum);
+    return `${hebrewDay}׳ ${month} ${hebrewYear}`;
+  };
+
+  const handlePrintReport = () => {
+    const now = new Date();
+    const hebrewDateStr = formatHebrewDate(now);
+    const gregorianDateStr = now.toLocaleDateString('he-IL');
+    const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <title>דוח שנתי - ${selectedYear}</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: Arial, sans-serif; padding: 30px; background: white; direction: rtl; }
+          .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb; }
+          .header-right { display: flex; align-items: center; gap: 15px; }
+          .logo { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+          .building-name { font-size: 24px; font-weight: bold; color: #1f2937; }
+          .header-left { text-align: left; font-size: 12px; color: #6b7280; }
+          .title { font-size: 22px; font-weight: bold; margin-bottom: 5px; color: #1f2937; text-align: center; }
+          .subtitle { color: #6b7280; margin-bottom: 20px; text-align: center; }
+          .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+          .summary-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; text-align: center; }
+          .summary-label { font-size: 12px; color: #6b7280; margin-bottom: 5px; }
+          .summary-value { font-size: 20px; font-weight: bold; }
+          .green { color: #16a34a; }
+          .red { color: #dc2626; }
+          .section { margin-bottom: 25px; }
+          .section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #374151; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: right; font-size: 13px; }
+          th { background: #f3f4f6; font-weight: bold; }
+          .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+          .badge-green { background: #dcfce7; color: #16a34a; }
+          .badge-red { background: #fee2e2; color: #dc2626; }
+          .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+          @media print { body { padding: 15px; } .summary-grid { grid-template-columns: repeat(4, 1fr); } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="header-right">
+            ${building?.logo_url ? `<img src="${building.logo_url}" class="logo" alt="לוגו">` : ''}
+            <span class="building-name">${building?.name || 'ועד בית'}</span>
+          </div>
+          <div class="header-left">
+            <div>${hebrewDateStr}</div>
+            <div>${gregorianDateStr} | ${timeStr}</div>
+          </div>
+        </div>
+
+        <div class="title">דוח שנתי ${selectedYear}</div>
+        <div class="subtitle">${building?.address || ''}</div>
+
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="summary-label">סה״כ הכנסות צפויות</div>
+            <div class="summary-value">₪${totalExpected.toLocaleString()}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">שולם בפועל</div>
+            <div class="summary-value green">₪${totalPaid.toLocaleString()}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">סה״כ הוצאות</div>
+            <div class="summary-value red">₪${totalExpenses.toLocaleString()}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">מאזן</div>
+            <div class="summary-value ${balance >= 0 ? 'green' : 'red'}">₪${balance.toLocaleString()}</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">פירוט חודשי</div>
+          <table>
+            <thead>
+              <tr>
+                <th>חודש</th>
+                <th>הכנסות צפויות</th>
+                <th>שולם</th>
+                <th>הוצאות</th>
+                <th>מאזן</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${monthlyData.map(data => `
+                <tr>
+                  <td>${data.month}</td>
+                  <td>₪${data.expected.toLocaleString()}</td>
+                  <td class="green">₪${data.paid.toLocaleString()}</td>
+                  <td class="red">₪${data.expenses.toLocaleString()}</td>
+                  <td class="${data.paid - data.expenses >= 0 ? 'green' : 'red'}">₪${(data.paid - data.expenses).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        ${Object.keys(expensesByCategory).length > 0 ? `
+          <div class="section">
+            <div class="section-title">פירוט הוצאות לפי קטגוריה</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>קטגוריה</th>
+                  <th>סכום</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${Object.entries(expensesByCategory)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([category, amount]) => `
+                    <tr>
+                      <td>${getCategoryLabel(category)}</td>
+                      <td>₪${amount.toLocaleString()}</td>
+                    </tr>
+                  `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        ${debtors.length > 0 ? `
+          <div class="section">
+            <div class="section-title">רשימת חייבים</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>דירה</th>
+                  <th>שם</th>
+                  <th>חודשים לא שולמו</th>
+                  <th>סכום חוב</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${debtors.map(({ member, unpaidCount, unpaidAmount }) => `
+                  <tr>
+                    <td>${member.apartment_number}</td>
+                    <td>${member.full_name}</td>
+                    <td>${unpaidCount}</td>
+                    <td class="red">₪${unpaidAmount.toLocaleString()}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        <div class="footer">
+          הופק על ידי מערכת ועד בית | ${gregorianDateStr}
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
 
   const exportToExcel = () => {
     // Create CSV content with BOM for Hebrew Excel support
@@ -418,8 +613,8 @@ export default function ReportsPage() {
           <Download className="ml-2 h-4 w-4" />
           ייצא לאקסל
         </Button>
-        <Button variant="outline" onClick={() => window.print()} className="w-full sm:w-auto">
-          <FileText className="ml-2 h-4 w-4" />
+        <Button variant="outline" onClick={handlePrintReport} className="w-full sm:w-auto">
+          <Printer className="ml-2 h-4 w-4" />
           הדפס דוח
         </Button>
       </div>

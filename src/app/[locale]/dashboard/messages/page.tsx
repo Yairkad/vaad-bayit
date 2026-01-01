@@ -201,6 +201,32 @@ export default function MessagesPage() {
     return message.yes_label && message.no_label;
   };
 
+  // Convert number to Hebrew letters (Gematria)
+  const toHebrewLetters = (num: number): string => {
+    const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+    const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+    const hundreds = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק'];
+
+    if (num === 15) return 'טו';
+    if (num === 16) return 'טז';
+
+    if (num < 10) return ones[num];
+    if (num < 100) return tens[Math.floor(num / 10)] + ones[num % 10];
+    if (num < 1000) return hundreds[Math.floor(num / 100)] + tens[Math.floor((num % 100) / 10)] + ones[num % 10];
+
+    const lastThree = num % 1000;
+    return hundreds[Math.floor(lastThree / 100)] + tens[Math.floor((lastThree % 100) / 10)] + ones[lastThree % 10];
+  };
+
+  const formatHebrewDateLetters = (date: Date): string => {
+    const hebrewDate = date.toLocaleDateString('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' });
+    const parts = hebrewDate.split(' ');
+    const dayNum = parseInt(parts[0]);
+    const month = parts[1];
+    const yearNum = parseInt(parts[2]);
+    return `${toHebrewLetters(dayNum)}׳ ${month} ${toHebrewLetters(yearNum)}`;
+  };
+
   const handlePrintMessage = (message: MessageWithResponses) => {
     const addressWithCity = building?.city
       ? `${building?.address}, ${building?.city}`
@@ -211,6 +237,8 @@ export default function MessagesPage() {
       month: 'long',
       year: 'numeric',
     });
+
+    const hebrewDateStr = formatHebrewDateLetters(new Date());
 
     // Get response summary if applicable
     const { yes: yesResponses, no: noResponses } = getResponseCounts(message.responses || []);
@@ -365,7 +393,7 @@ export default function MessagesPage() {
             <h1>הודעה מוועד הבית</h1>
             <div class="building-name">${building?.name || ''}</div>
             <div class="address">${addressWithCity}</div>
-            <div class="header-date">${new Date().toLocaleDateString('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' })} | ${new Date().toLocaleDateString('he-IL')} | ${new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+            <div class="header-date">${hebrewDateStr} | ${new Date().toLocaleDateString('he-IL')} | ${new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
           </div>
           <div class="content">
             <div class="message-title">${message.title}</div>

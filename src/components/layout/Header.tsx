@@ -51,12 +51,14 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
   const tNav = useTranslations('nav');
   const router = useRouter();
 
-  // Get building logo for committee members
+  // Get building info for committee members
   let buildingLogo: string | null = null;
+  let buildingName: string | null = null;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const { currentBuilding } = useBuilding();
     buildingLogo = currentBuilding?.logo_url || null;
+    buildingName = currentBuilding?.name || currentBuilding?.address || null;
   } catch {
     // Not inside BuildingProvider (admin/tenant) - use default logo
   }
@@ -73,8 +75,39 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // Convert number to Hebrew letters (Gematria)
+  const toHebrewLetters = (num: number): string => {
+    const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+    const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+    const hundreds = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק'];
+
+    if (num === 15) return 'טו';
+    if (num === 16) return 'טז';
+
+    if (num < 10) return ones[num];
+    if (num < 100) return tens[Math.floor(num / 10)] + ones[num % 10];
+    if (num < 1000) return hundreds[Math.floor(num / 100)] + tens[Math.floor((num % 100) / 10)] + ones[num % 10];
+
+    // For years like 5786 -> תשפ"ו (we take last 3 digits: 786)
+    const lastThree = num % 1000;
+    return hundreds[Math.floor(lastThree / 100)] + tens[Math.floor((lastThree % 100) / 10)] + ones[lastThree % 10];
+  };
+
   const formatHebrewDate = (date: Date) => {
-    return date.toLocaleDateString('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' });
+    // Get Hebrew date parts
+    const hebrewDate = date.toLocaleDateString('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' });
+    const parts = hebrewDate.split(' ');
+
+    // Extract day number and year number
+    const dayNum = parseInt(parts[0]);
+    const month = parts[1];
+    const yearNum = parseInt(parts[2]);
+
+    // Convert to Hebrew letters
+    const hebrewDay = toHebrewLetters(dayNum);
+    const hebrewYear = toHebrewLetters(yearNum);
+
+    return `${hebrewDay}׳ ${month} ${hebrewYear}`;
   };
 
   const formatGregorianDate = (date: Date) => {
@@ -160,7 +193,7 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
                   alt="לוגו"
                   className="h-9 w-9 rounded-lg object-cover"
                 />
-                <span className="text-xl font-bold text-gray-800">ועד בית</span>
+                <span className="text-xl font-bold text-gray-800 truncate max-w-[160px]">{buildingName || 'ועד בית'}</span>
               </Link>
             </div>
 
