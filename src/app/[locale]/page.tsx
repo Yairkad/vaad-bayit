@@ -2,15 +2,28 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, CreditCard, FileText } from 'lucide-react';
+import { Building2, Users, CreditCard, FileText, Loader2 } from 'lucide-react';
 import { ContactDialog } from '@/components/ContactDialog';
 
 export default function HomePage() {
   const t = useTranslations();
+  const router = useRouter();
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isRegisterLoading, setIsRegisterLoading] = useState(false);
+
+  const handleLoginClick = () => {
+    setIsLoginLoading(true);
+    router.push('/login');
+  };
+
+  const handleRegisterClick = () => {
+    setIsRegisterLoading(true);
+    router.push('/register');
+  };
 
   const features = [
     {
@@ -48,12 +61,21 @@ export default function HomePage() {
               </span>
             </Link>
             <div className="flex gap-2 sm:gap-4">
-              <Link href="/login">
-                <Button variant="ghost" className="text-[#203857] hover:bg-[#a5d4f0]">{t('auth.login')}</Button>
-              </Link>
-              <Link href="/register">
-                <Button className="bg-[#203857] hover:bg-[#2d4a6f]">{t('auth.register')}</Button>
-              </Link>
+              <Button
+                variant="ghost"
+                className="text-[#203857] hover:bg-[#a5d4f0]"
+                onClick={handleLoginClick}
+                disabled={isLoginLoading || isRegisterLoading}
+              >
+                {isLoginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('auth.login')}
+              </Button>
+              <Button
+                className="bg-[#203857] hover:bg-[#2d4a6f]"
+                onClick={handleRegisterClick}
+                disabled={isLoginLoading || isRegisterLoading}
+              >
+                {isRegisterLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('auth.register')}
+              </Button>
             </div>
           </nav>
         </div>
@@ -70,16 +92,23 @@ export default function HomePage() {
             מעקב תשלומים, ניהול דיירים, הודעות ומסמכים - הכל במקום אחד.
           </p>
           <div className="flex gap-4 justify-center">
-            <Link href="/register">
-              <Button size="lg" className="text-lg px-8 bg-[#203857] hover:bg-[#2d4a6f]">
-                הרשמה
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="text-lg px-8 border-[#203857] text-[#203857] hover:bg-[#bee4fa]">
-                התחברות
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="text-lg px-8 bg-[#203857] hover:bg-[#2d4a6f]"
+              onClick={handleRegisterClick}
+              disabled={isLoginLoading || isRegisterLoading}
+            >
+              {isRegisterLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'הרשמה'}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="text-lg px-8 border-[#203857] text-[#203857] hover:bg-[#bee4fa]"
+              onClick={handleLoginClick}
+              disabled={isLoginLoading || isRegisterLoading}
+            >
+              {isLoginLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'התחברות'}
+            </Button>
           </div>
         </div>
       </section>
