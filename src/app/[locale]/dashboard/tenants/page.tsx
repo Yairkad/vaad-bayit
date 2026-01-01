@@ -128,14 +128,16 @@ export default function TenantsPage() {
     setEditingMember(null);
   };
 
-  const openEditDialog = (member: BuildingMember) => {
+  const openEditDialog = (member: MemberWithProfile) => {
     setEditingMember(member);
+    // Email: prefer profile email (from linked user), fallback to building_members email
+    const memberEmail = member.profiles?.email || member.email || '';
     setFormData({
       full_name: member.full_name,
       apartment_number: member.apartment_number || '',
       phone: member.phone || '',
       phone2: (member as any).phone2 || '',
-      email: member.email || '',
+      email: memberEmail,
       role: member.role as 'tenant' | 'committee',
       payment_method: member.payment_method as 'cash' | 'standing_order',
       standing_order_active: member.standing_order_active,
@@ -598,7 +600,12 @@ export default function TenantsPage() {
         <TabsContent value="management" className="mt-4">
           {/* Mobile Cards View */}
           <div className="md:hidden space-y-3">
-            {filteredMembers.map((member) => (
+            {filteredMembers.map((member) => {
+              // Use profile data (from linked user) if available, otherwise use building_members data
+              const displayName = member.profiles?.full_name || member.full_name;
+              const displayPhone = member.profiles?.phone || member.phone;
+              const displayEmail = member.profiles?.email || member.email;
+              return (
               <Card key={member.id}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
@@ -614,13 +621,18 @@ export default function TenantsPage() {
                           <UserX className="h-4 w-4 text-muted-foreground" />
                         )}
                       </div>
-                      <p className="font-medium">{member.full_name}</p>
-                      {member.phone && (
-                        <p className="text-sm text-muted-foreground" dir="ltr">{member.phone}</p>
-                      )}
-                      {(member as any).phone2 && (
-                        <p className="text-sm text-muted-foreground" dir="ltr">{(member as any).phone2}</p>
-                      )}
+                      <p className="font-medium">{displayName}</p>
+                      <div className="text-sm text-muted-foreground space-y-0.5">
+                        {displayPhone && (
+                          <p dir="ltr">{displayPhone}</p>
+                        )}
+                        {(member as any).phone2 && (
+                          <p dir="ltr">{(member as any).phone2}</p>
+                        )}
+                        {displayEmail && (
+                          <p dir="ltr" className="text-xs">{displayEmail}</p>
+                        )}
+                      </div>
                       <div className="flex gap-2 text-xs text-muted-foreground">
                         {member.storage_number && <span>מחסן: {member.storage_number}</span>}
                         {member.parking_number && <span>חניה: {member.parking_number}</span>}
@@ -645,7 +657,8 @@ export default function TenantsPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
             {filteredMembers.length === 0 && (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground">
@@ -678,12 +691,16 @@ export default function TenantsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMembers.map((member) => (
+                  {filteredMembers.map((member) => {
+                    // Use profile data (from linked user) if available, otherwise use building_members data
+                    const displayName = member.profiles?.full_name || member.full_name;
+                    const displayPhone = member.profiles?.phone || member.phone;
+                    return (
                     <TableRow key={member.id}>
                       <TableCell className="font-medium">{member.apartment_number}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span>{member.full_name}</span>
+                          <span>{displayName}</span>
                           <span className="text-xs text-muted-foreground">
                             {member.role === 'committee' ? 'ועד' : 'דייר'}
                           </span>
@@ -694,7 +711,7 @@ export default function TenantsPage() {
                           {member.ownership_type === 'renter' ? 'שוכר' : 'בעלים'}
                         </Badge>
                       </TableCell>
-                      <TableCell dir="ltr" className="text-left">{member.phone || '-'}</TableCell>
+                      <TableCell dir="ltr" className="text-left">{displayPhone || '-'}</TableCell>
                       <TableCell dir="ltr" className="text-left">{(member as any).phone2 || '-'}</TableCell>
                       <TableCell>{member.storage_number || '-'}</TableCell>
                       <TableCell>
@@ -735,7 +752,8 @@ export default function TenantsPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {filteredMembers.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
@@ -766,17 +784,23 @@ export default function TenantsPage() {
                     <TableHead>שם</TableHead>
                     <TableHead>טלפון 1</TableHead>
                     <TableHead>טלפון 2</TableHead>
+                    <TableHead>אימייל</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMembers.map((member) => (
+                  {filteredMembers.map((member) => {
+                    // Use profile data (from linked user) if available, otherwise use building_members data
+                    const displayName = member.profiles?.full_name || member.full_name;
+                    const displayPhone = member.profiles?.phone || member.phone;
+                    const displayEmail = member.profiles?.email || member.email;
+                    return (
                     <TableRow key={member.id}>
                       <TableCell className="font-bold text-lg">{member.apartment_number}</TableCell>
-                      <TableCell className="font-medium">{member.full_name}</TableCell>
+                      <TableCell className="font-medium">{displayName}</TableCell>
                       <TableCell dir="ltr" className="text-left">
-                        {member.phone ? (
-                          <a href={`tel:${member.phone}`} className="text-primary hover:underline">
-                            {member.phone}
+                        {displayPhone ? (
+                          <a href={`tel:${displayPhone}`} className="text-primary hover:underline">
+                            {displayPhone}
                           </a>
                         ) : '-'}
                       </TableCell>
@@ -787,11 +811,19 @@ export default function TenantsPage() {
                           </a>
                         ) : '-'}
                       </TableCell>
+                      <TableCell dir="ltr" className="text-left">
+                        {displayEmail ? (
+                          <a href={`mailto:${displayEmail}`} className="text-primary hover:underline">
+                            {displayEmail}
+                          </a>
+                        ) : '-'}
+                      </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {filteredMembers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                         {searchQuery ? 'לא נמצאו תוצאות לחיפוש' : 'אין דיירים'}
                       </TableCell>
                     </TableRow>
