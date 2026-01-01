@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     // Get request body
     const body = await request.json();
-    const { email, full_name, phone, phone2, building_id, apartment_number, role = 'committee' } = body;
+    const { email, full_name, phone, phone2, building_id, apartment_number, floor_number, role = 'committee' } = body;
 
     if (!email || !full_name || !building_id) {
       return NextResponse.json(
@@ -164,6 +164,7 @@ export async function POST(request: Request) {
         user_id: userId,
         full_name,
         apartment_number,
+        floor_number: floor_number || null,
         role, // committee or tenant
         phone: phone || null,
         phone2: phone2 || null,

@@ -72,6 +72,7 @@ export default function AdminBuildingsPage() {
     phone: '',
     phone2: '',
     apartment_number: '',
+    floor_number: '',
     role: 'tenant' as 'committee' | 'tenant',
   });
 
@@ -125,7 +126,7 @@ export default function AdminBuildingsPage() {
   };
 
   const resetUserForm = () => {
-    setUserFormData({ full_name: '', email: '', phone: '', phone2: '', apartment_number: '', role: 'tenant' });
+    setUserFormData({ full_name: '', email: '', phone: '', phone2: '', apartment_number: '', floor_number: '', role: 'tenant' });
     setSelectedBuilding(null);
   };
 
@@ -275,6 +276,7 @@ export default function AdminBuildingsPage() {
             phone2: userFormData.phone2 || null,
             building_id: selectedBuilding.id,
             apartment_number: userFormData.apartment_number,
+            floor_number: userFormData.floor_number ? parseInt(userFormData.floor_number) : null,
             role: userFormData.role,
           }),
         });
@@ -300,6 +302,7 @@ export default function AdminBuildingsPage() {
             user_id: null, // No user account - managed tenant
             full_name: userFormData.full_name,
             apartment_number: userFormData.apartment_number,
+            floor_number: userFormData.floor_number ? parseInt(userFormData.floor_number) : null,
             role: userFormData.role,
             phone: userFormData.phone || null,
             phone2: userFormData.phone2 || null,
@@ -684,7 +687,7 @@ export default function AdminBuildingsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="user_apartment">מספר דירה *</Label>
                   <Input
@@ -693,6 +696,16 @@ export default function AdminBuildingsPage() {
                     onChange={(e) => setUserFormData({ ...userFormData, apartment_number: e.target.value })}
                     placeholder="לדוגמה: 5"
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="user_floor">קומה</Label>
+                  <Input
+                    id="user_floor"
+                    type="number"
+                    value={userFormData.floor_number}
+                    onChange={(e) => setUserFormData({ ...userFormData, floor_number: e.target.value })}
+                    placeholder="לדוגמה: 3"
                   />
                 </div>
                 <div className="space-y-2">

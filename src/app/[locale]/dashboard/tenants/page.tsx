@@ -37,7 +37,13 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, UserCheck, UserX, Loader2, Search, Car, Package, Home, Phone, BookUser, Settings2, Calendar } from 'lucide-react';
+import { Plus, Pencil, Trash2, UserCheck, UserX, Loader2, Search, Car, Package, Home, Phone, BookUser, Settings2, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { BuildingMember, Building, Profile, ParkingLot, OwnershipType } from '@/types/database';
 
 type MemberWithProfile = BuildingMember & {
@@ -56,10 +62,16 @@ export default function TenantsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('management');
+  const [sortField, setSortField] = useState<string>('apartment_number');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [filterFloor, setFilterFloor] = useState<string>('all');
+  const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterOwnership, setFilterOwnership] = useState<string>('all');
 
   const [formData, setFormData] = useState({
     full_name: '',
     apartment_number: '',
+    floor_number: '',
     phone: '',
     phone2: '',
     email: '',
@@ -110,6 +122,7 @@ export default function TenantsPage() {
     setFormData({
       full_name: '',
       apartment_number: '',
+      floor_number: '',
       phone: '',
       phone2: '',
       email: '',
@@ -135,6 +148,7 @@ export default function TenantsPage() {
     setFormData({
       full_name: member.full_name,
       apartment_number: member.apartment_number || '',
+      floor_number: (member as any).floor_number?.toString() || '',
       phone: member.phone || '',
       phone2: (member as any).phone2 || '',
       email: memberEmail,
@@ -168,6 +182,7 @@ export default function TenantsPage() {
           .update({
             full_name: formData.full_name,
             apartment_number: formData.apartment_number,
+            floor_number: formData.floor_number ? parseInt(formData.floor_number) : null,
             phone: formData.phone || null,
             phone2: formData.phone2 || null,
             email: formData.email || null,
@@ -195,6 +210,7 @@ export default function TenantsPage() {
             building_id: buildingId,
             full_name: formData.full_name,
             apartment_number: formData.apartment_number,
+            floor_number: formData.floor_number ? parseInt(formData.floor_number) : null,
             phone: formData.phone || null,
             phone2: formData.phone2 || null,
             email: formData.email || null,
@@ -251,19 +267,106 @@ export default function TenantsPage() {
     loadData();
   };
 
-  // Filter members by search query (apartment, name, storage, parking, phone)
-  const filteredMembers = members.filter(member => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      (member.apartment_number && member.apartment_number.toLowerCase().includes(query)) ||
-      member.full_name.toLowerCase().includes(query) ||
-      (member.storage_number && member.storage_number.toLowerCase().includes(query)) ||
-      (member.parking_number && member.parking_number.toLowerCase().includes(query)) ||
-      (member.phone && member.phone.includes(query)) ||
-      ((member as any).phone2 && (member as any).phone2.includes(query))
-    );
-  });
+  // Get unique floor numbers for filter dropdown
+  const uniqueFloors = [...new Set(members.map(m => (m as any).floor_number).filter(Boolean))].sort((a, b) => a - b);
+
+  // Handle sort toggle
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Filter and sort members
+  const filteredMembers = members
+    .filter(member => {
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const floorNumber = (member as any).floor_number;
+        const matchesSearch = (
+          (member.apartment_number && member.apartment_number.toLowerCase().includes(query)) ||
+          member.full_name.toLowerCase().includes(query) ||
+          (floorNumber && floorNumber.toString().includes(query)) ||
+          (member.storage_number && member.storage_number.toLowerCase().includes(query)) ||
+          (member.parking_number && member.parking_number.toLowerCase().includes(query)) ||
+          (member.phone && member.phone.includes(query)) ||
+          ((member as any).phone2 && (member as any).phone2.includes(query))
+        );
+        if (!matchesSearch) return false;
+      }
+
+      // Floor filter
+      if (filterFloor !== 'all') {
+        const memberFloor = (member as any).floor_number;
+        if (filterFloor === 'none') {
+          if (memberFloor) return false;
+        } else if (memberFloor?.toString() !== filterFloor) {
+          return false;
+        }
+      }
+
+      // Role filter
+      if (filterRole !== 'all' && member.role !== filterRole) return false;
+
+      // Ownership filter
+      if (filterOwnership !== 'all' && member.ownership_type !== filterOwnership) return false;
+
+      return true;
+    })
+    .sort((a, b) => {
+      let aVal: any, bVal: any;
+
+      switch (sortField) {
+        case 'apartment_number':
+          aVal = parseInt(a.apartment_number || '0') || a.apartment_number || '';
+          bVal = parseInt(b.apartment_number || '0') || b.apartment_number || '';
+          break;
+        case 'floor_number':
+          aVal = (a as any).floor_number || 0;
+          bVal = (b as any).floor_number || 0;
+          break;
+        case 'full_name':
+          aVal = a.full_name.toLowerCase();
+          bVal = b.full_name.toLowerCase();
+          break;
+        case 'role':
+          aVal = a.role;
+          bVal = b.role;
+          break;
+        case 'ownership_type':
+          aVal = a.ownership_type || '';
+          bVal = b.ownership_type || '';
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+  // Sortable header component
+  const SortableHeader = ({ field, children, className = '' }: { field: string; children: React.ReactNode; className?: string }) => (
+    <TableHead className={`text-right ${className}`}>
+      <button
+        onClick={() => handleSort(field)}
+        className="flex items-center gap-1 hover:text-primary transition-colors w-full justify-end"
+      >
+        {children}
+        {sortField === field ? (
+          sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-30" />
+        )}
+      </button>
+    </TableHead>
+  );
 
   if (isLoading) {
     return (
@@ -319,16 +422,16 @@ export default function TenantsPage() {
               </DialogHeader>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full_name">{t('tenants.tenantName')} *</Label>
+                    <Input
+                      id="full_name"
+                      value={formData.full_name}
+                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      required
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="full_name">{t('tenants.tenantName')} *</Label>
-                      <Input
-                        id="full_name"
-                        value={formData.full_name}
-                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        required
-                      />
-                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="apartment_number">{t('tenants.apartment')} *</Label>
                       <Input
@@ -336,6 +439,16 @@ export default function TenantsPage() {
                         value={formData.apartment_number}
                         onChange={(e) => setFormData({ ...formData, apartment_number: e.target.value })}
                         required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="floor_number">קומה</Label>
+                      <Input
+                        id="floor_number"
+                        type="number"
+                        value={formData.floor_number}
+                        onChange={(e) => setFormData({ ...formData, floor_number: e.target.value })}
+                        placeholder="למשל: 3"
                       />
                     </div>
                   </div>
@@ -564,14 +677,59 @@ export default function TenantsPage() {
             </DialogContent>
           </Dialog>
         </div>
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="חפש דירה, שם, טלפון..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-10 w-full sm:w-64"
-          />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="חפש דירה, קומה, שם, טלפון..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-10 w-full sm:w-64"
+            />
+          </div>
+
+          {/* Filter dropdowns */}
+          <div className="flex gap-2">
+            {uniqueFloors.length > 0 && (
+              <Select value={filterFloor} onValueChange={setFilterFloor}>
+                <SelectTrigger className="w-28 h-9">
+                  <Filter className="h-3 w-3 ml-1" />
+                  <SelectValue placeholder="קומה" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל הקומות</SelectItem>
+                  <SelectItem value="none">ללא קומה</SelectItem>
+                  {uniqueFloors.map(floor => (
+                    <SelectItem key={floor} value={floor.toString()}>קומה {floor}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select value={filterRole} onValueChange={setFilterRole}>
+              <SelectTrigger className="w-28 h-9">
+                <Filter className="h-3 w-3 ml-1" />
+                <SelectValue placeholder="תפקיד" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל התפקידים</SelectItem>
+                <SelectItem value="committee">ועד בית</SelectItem>
+                <SelectItem value="tenant">דייר</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterOwnership} onValueChange={setFilterOwnership}>
+              <SelectTrigger className="w-28 h-9">
+                <Filter className="h-3 w-3 ml-1" />
+                <SelectValue placeholder="בעלות" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הסוגים</SelectItem>
+                <SelectItem value="owner">בעלים</SelectItem>
+                <SelectItem value="renter">שוכר</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -605,13 +763,17 @@ export default function TenantsPage() {
               const displayName = member.profiles?.full_name || member.full_name;
               const displayPhone = member.profiles?.phone || member.phone;
               const displayEmail = member.profiles?.email || member.email;
+              const floorNumber = (member as any).floor_number;
               return (
               <Card key={member.id} dir="rtl">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1 text-right">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-lg">דירה {member.apartment_number}</span>
+                        <span className="font-bold text-lg">
+                          דירה {member.apartment_number}
+                          {floorNumber && <span className="text-sm font-normal text-muted-foreground">, קומה {floorNumber}</span>}
+                        </span>
                         <Badge variant={member.role === 'committee' ? 'default' : 'secondary'}>
                           {member.role === 'committee' ? 'ועד' : 'דייר'}
                         </Badge>
@@ -672,16 +834,17 @@ export default function TenantsPage() {
           <Card className="hidden md:block">
             <CardHeader>
               <CardTitle className="text-lg">
-                {filteredMembers.length} דיירים {searchQuery && `(מתוך ${members.length})`}
+                {filteredMembers.length} דיירים {(searchQuery || filterFloor !== 'all' || filterRole !== 'all' || filterOwnership !== 'all') && `(מתוך ${members.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Table dir="rtl">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">{t('tenants.apartment')}</TableHead>
-                    <TableHead className="text-right">{t('tenants.tenantName')}</TableHead>
-                    <TableHead className="text-right">בעלות</TableHead>
+                    <SortableHeader field="apartment_number">{t('tenants.apartment')}</SortableHeader>
+                    <SortableHeader field="floor_number">קומה</SortableHeader>
+                    <SortableHeader field="full_name">{t('tenants.tenantName')}</SortableHeader>
+                    <SortableHeader field="ownership_type">בעלות</SortableHeader>
                     <TableHead className="text-right">טלפון 1</TableHead>
                     <TableHead className="text-right">טלפון 2</TableHead>
                     <TableHead className="text-right">מחסן</TableHead>
@@ -695,9 +858,11 @@ export default function TenantsPage() {
                     // Use profile data (from linked user) if available, otherwise use building_members data
                     const displayName = member.profiles?.full_name || member.full_name;
                     const displayPhone = member.profiles?.phone || member.phone;
+                    const floorNum = (member as any).floor_number;
                     return (
                     <TableRow key={member.id}>
                       <TableCell className="font-medium">{member.apartment_number}</TableCell>
+                      <TableCell>{floorNum || '-'}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span>{displayName}</span>
@@ -756,8 +921,10 @@ export default function TenantsPage() {
                   })}
                   {filteredMembers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                        {searchQuery ? 'לא נמצאו תוצאות לחיפוש' : 'אין דיירים. לחץ על "הוסף דייר" להוספת הדייר הראשון.'}
+                      <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                        {(searchQuery || filterFloor !== 'all' || filterRole !== 'all' || filterOwnership !== 'all')
+                          ? 'לא נמצאו תוצאות לחיפוש/סינון'
+                          : 'אין דיירים. לחץ על "הוסף דייר" להוספת הדייר הראשון.'}
                       </TableCell>
                     </TableRow>
                   )}
@@ -780,10 +947,11 @@ export default function TenantsPage() {
               <Table dir="rtl">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-20 text-right">{t('tenants.apartment')}</TableHead>
-                    <TableHead className="text-right">שם</TableHead>
-                    <TableHead className="text-right">טלפון 1</TableHead>
-                    <TableHead className="text-right">טלפון 2</TableHead>
+                    <SortableHeader field="apartment_number" className="w-20">{t('tenants.apartment')}</SortableHeader>
+                    <SortableHeader field="floor_number" className="w-16">קומה</SortableHeader>
+                    <SortableHeader field="full_name">שם</SortableHeader>
+                    <TableHead className="text-right w-32">טלפון 1</TableHead>
+                    <TableHead className="text-right w-32">טלפון 2</TableHead>
                     <TableHead className="text-right">אימייל</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -793,25 +961,27 @@ export default function TenantsPage() {
                     const displayName = member.profiles?.full_name || member.full_name;
                     const displayPhone = member.profiles?.phone || member.phone;
                     const displayEmail = member.profiles?.email || member.email;
+                    const floorNumber = (member as any).floor_number;
                     return (
                     <TableRow key={member.id}>
-                      <TableCell className="font-bold text-lg">{member.apartment_number}</TableCell>
-                      <TableCell className="font-medium">{displayName}</TableCell>
-                      <TableCell dir="ltr" className="text-left">
+                      <TableCell className="font-bold text-lg text-right">{member.apartment_number}</TableCell>
+                      <TableCell className="text-right">{floorNumber || '-'}</TableCell>
+                      <TableCell className="font-medium text-right">{displayName}</TableCell>
+                      <TableCell dir="ltr" className="text-right">
                         {displayPhone ? (
                           <a href={`tel:${displayPhone}`} className="text-primary hover:underline">
                             {displayPhone}
                           </a>
                         ) : '-'}
                       </TableCell>
-                      <TableCell dir="ltr" className="text-left">
+                      <TableCell dir="ltr" className="text-right">
                         {(member as any).phone2 ? (
                           <a href={`tel:${(member as any).phone2}`} className="text-primary hover:underline">
                             {(member as any).phone2}
                           </a>
                         ) : '-'}
                       </TableCell>
-                      <TableCell dir="ltr" className="text-left">
+                      <TableCell dir="ltr" className="text-right">
                         {displayEmail ? (
                           <a href={`mailto:${displayEmail}`} className="text-primary hover:underline">
                             {displayEmail}
@@ -823,8 +993,10 @@ export default function TenantsPage() {
                   })}
                   {filteredMembers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        {searchQuery ? 'לא נמצאו תוצאות לחיפוש' : 'אין דיירים'}
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        {(searchQuery || filterFloor !== 'all' || filterRole !== 'all' || filterOwnership !== 'all')
+                          ? 'לא נמצאו תוצאות לחיפוש/סינון'
+                          : 'אין דיירים'}
                       </TableCell>
                     </TableRow>
                   )}
