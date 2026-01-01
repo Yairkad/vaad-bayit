@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, Clock, Mail, Users, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Loader2, Clock, Mail, Users, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import type { Message, Building, BuildingMember, MessageResponse } from '@/types/database';
 
 type MessageWithResponses = Message & {
@@ -199,6 +199,219 @@ export default function MessagesPage() {
 
   const requiresResponse = (message: Message) => {
     return message.yes_label && message.no_label;
+  };
+
+  const handlePrintMessage = (message: MessageWithResponses) => {
+    const addressWithCity = building?.city
+      ? `${building?.address}, ${building?.city}`
+      : building?.address || '';
+
+    const formattedDate = new Date(message.created_at).toLocaleDateString('he-IL', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    // Get response summary if applicable
+    const { yes: yesResponses, no: noResponses } = getResponseCounts(message.responses || []);
+    const hasResponses = requiresResponse(message);
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <title>${message.title}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            direction: rtl;
+          }
+          .message-card {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+          }
+          .header {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+          }
+          .header-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 3px solid white;
+          }
+          .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+          }
+          .header .building-name {
+            font-size: 16px;
+            opacity: 0.9;
+          }
+          .header .address {
+            font-size: 14px;
+            opacity: 0.8;
+          }
+          .header-date {
+            margin-top: 12px;
+            font-size: 12px;
+            opacity: 0.85;
+            background: rgba(255,255,255,0.15);
+            padding: 5px 14px;
+            border-radius: 20px;
+            display: inline-block;
+          }
+          .content {
+            padding: 30px;
+          }
+          .message-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+          }
+          .message-date {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 20px;
+          }
+          .message-body {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #334155;
+            white-space: pre-wrap;
+          }
+          .responses-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+          }
+          .responses-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 15px;
+          }
+          .responses-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+          }
+          .response-box {
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8fafc;
+          }
+          .response-box.yes {
+            border-right: 4px solid #22c55e;
+          }
+          .response-box.no {
+            border-right: 4px solid #ef4444;
+          }
+          .response-label {
+            font-weight: bold;
+            margin-bottom: 8px;
+          }
+          .response-count {
+            font-size: 24px;
+            font-weight: bold;
+          }
+          .response-list {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 10px;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+          }
+          @media print {
+            body {
+              background: white;
+              padding: 0;
+            }
+            .message-card {
+              box-shadow: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="message-card">
+          <div class="header">
+            ${building?.logo_url ? `<img src="${building.logo_url}" alt="לוגו" class="header-logo" />` : ''}
+            <h1>הודעה מוועד הבית</h1>
+            <div class="building-name">${building?.name || ''}</div>
+            <div class="address">${addressWithCity}</div>
+            <div class="header-date">${new Date().toLocaleDateString('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' })} | ${new Date().toLocaleDateString('he-IL')} | ${new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+          </div>
+          <div class="content">
+            <div class="message-title">${message.title}</div>
+            <div class="message-date">פורסם: ${formattedDate}</div>
+            <div class="message-body">${message.content}</div>
+
+            ${hasResponses ? `
+              <div class="responses-section">
+                <div class="responses-title">סיכום תשובות</div>
+                <div class="responses-grid">
+                  <div class="response-box yes">
+                    <div class="response-label">${message.yes_label || 'כן'}</div>
+                    <div class="response-count">${yesResponses.length}</div>
+                    <div class="response-list">
+                      ${yesResponses.map(r => `דירה ${r.building_members?.apartment_number} - ${r.building_members?.full_name}`).join('<br>')}
+                    </div>
+                  </div>
+                  <div class="response-box no">
+                    <div class="response-label">${message.no_label || 'לא'}</div>
+                    <div class="response-count">${noResponses.length}</div>
+                    <div class="response-list">
+                      ${noResponses.map(r => `דירה ${r.building_members?.apartment_number} - ${r.building_members?.full_name}`).join('<br>')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+
+            <div class="footer">
+              הודפס ממערכת ועד בית | ${new Date().toLocaleDateString('he-IL')}
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    }
   };
 
   if (isLoading) {
@@ -392,13 +605,24 @@ export default function MessagesPage() {
                       )}
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(message)}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handlePrintMessage(message)}
+                      title="הדפס הודעה"
+                    >
+                      <Printer className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(message)}
+                      title="מחק הודעה"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">

@@ -121,11 +121,20 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6" style={{ background: 'linear-gradient(135deg, rgba(241, 245, 249, 0.6) 0%, rgba(255, 255, 255, 1) 100%)', margin: '-1.5rem', padding: '1.5rem', minHeight: 'calc(100vh - 4rem)' }}>
-      <div>
-        <h1 className="text-3xl font-bold">לוח בקרה</h1>
-        <p className="text-muted-foreground">
-          {currentBuilding?.name || 'ברוכים הבאים למערכת ועד בית'}
-        </p>
+      <div className="flex items-center gap-4">
+        {currentBuilding?.logo_url && (
+          <img
+            src={currentBuilding.logo_url}
+            alt="לוגו הבניין"
+            className="h-16 w-16 rounded-xl object-cover shadow-md"
+          />
+        )}
+        <div>
+          <h1 className="text-3xl font-bold">לוח בקרה</h1>
+          <p className="text-muted-foreground">
+            {currentBuilding?.name || 'ברוכים הבאים למערכת ועד בית'}
+          </p>
+        </div>
       </div>
 
       {/* Stats Grid */}

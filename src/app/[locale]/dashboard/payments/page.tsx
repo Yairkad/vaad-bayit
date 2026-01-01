@@ -264,6 +264,15 @@ export default function PaymentsPage() {
             font-size: 16px;
             opacity: 0.9;
           }
+          .header-date {
+            margin-top: 12px;
+            font-size: 13px;
+            opacity: 0.85;
+            background: rgba(255,255,255,0.15);
+            padding: 6px 16px;
+            border-radius: 20px;
+            display: inline-block;
+          }
           .content {
             padding: 32px;
           }
@@ -370,6 +379,7 @@ export default function PaymentsPage() {
             ${building?.logo_url ? `<img src="${building.logo_url}" alt="לוגו" class="header-logo" />` : ''}
             <h1>אישור תשלום ועד בית</h1>
             <div class="address">${addressWithCity}</div>
+            <div class="header-date">${new Date().toLocaleDateString('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' })} | ${new Date().toLocaleDateString('he-IL')} | ${new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
           </div>
           <div class="content">
             <div class="checkmark"></div>

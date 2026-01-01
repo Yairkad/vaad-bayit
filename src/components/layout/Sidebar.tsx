@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { BugReportDialog } from '@/components/BugReportDialog';
+import { useBuilding } from '@/contexts/BuildingContext';
 
 interface SidebarProps {
   userRole: 'admin' | 'committee' | 'tenant';
@@ -32,6 +33,16 @@ export function Sidebar({ userRole }: SidebarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Get building logo for committee members
+  let buildingLogo: string | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { currentBuilding } = useBuilding();
+    buildingLogo = currentBuilding?.logo_url || null;
+  } catch {
+    // Not inside BuildingProvider (admin/tenant) - use default logo
+  }
 
   const adminLinks = [
     { href: '/admin', icon: LayoutDashboard, label: t('dashboard'), borderColor: 'border-r-slate-400', activeColor: 'text-slate-600', activeBg: 'bg-slate-100' },
@@ -69,7 +80,11 @@ export function Sidebar({ userRole }: SidebarProps) {
       {/* Logo */}
       <div className="p-5 border-b border-[#d1d5db]">
         <Link href={userRole === 'admin' ? '/admin' : userRole === 'tenant' ? '/tenant' : '/dashboard'} className="flex items-center gap-3">
-          <img src="/icon.svg" alt="ועד בית" className="h-9 w-9" />
+          <img
+            src={buildingLogo || '/icon.svg'}
+            alt="לוגו"
+            className="h-9 w-9 rounded-lg object-cover"
+          />
           <span className="text-xl font-bold text-gray-800">ועד בית</span>
         </Link>
       </div>

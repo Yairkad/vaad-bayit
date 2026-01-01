@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
@@ -33,11 +33,13 @@ import {
   Inbox,
   Wallet,
   CircleDollarSign,
+  Calendar,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { BugReportDialog } from '@/components/BugReportDialog';
 import { BuildingSwitcher } from '@/components/BuildingSwitcher';
+import { useBuilding } from '@/contexts/BuildingContext';
 
 interface HeaderProps {
   userName: string;
@@ -48,8 +50,40 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
   const t = useTranslations();
   const tNav = useTranslations('nav');
   const router = useRouter();
+
+  // Get building logo for committee members
+  let buildingLogo: string | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { currentBuilding } = useBuilding();
+    buildingLogo = currentBuilding?.logo_url || null;
+  } catch {
+    // Not inside BuildingProvider (admin/tenant) - use default logo
+  }
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+  // Update time every minute
+  useEffect(() => {
+    setCurrentTime(new Date());
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatHebrewDate = (date: Date) => {
+    return date.toLocaleDateString('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  const formatGregorianDate = (date: Date) => {
+    return date.toLocaleDateString('he-IL');
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+  };
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -100,6 +134,7 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
   const links = userRole === 'admin' ? adminLinks : userRole === 'committee' ? committeeLinks : tenantLinks;
 
   return (
+    <>
     <header className="sticky top-0 z-30 h-16 bg-gradient-header border-b">
       <div className="h-full px-4 flex items-center justify-between gap-4">
         {/* Mobile menu button */}
@@ -120,7 +155,11 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-3"
               >
-                <img src="/icon.svg" alt="ועד בית" className="h-9 w-9" />
+                <img
+                  src={buildingLogo || '/icon.svg'}
+                  alt="לוגו"
+                  className="h-9 w-9 rounded-lg object-cover"
+                />
                 <span className="text-xl font-bold text-gray-800">ועד בית</span>
               </Link>
             </div>
@@ -194,6 +233,18 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
 
         <div className="flex-1" />
 
+        {/* Date and Time Display */}
+        {currentTime && (
+          <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground bg-white/50 px-3 py-1.5 rounded-lg">
+            <Calendar className="h-4 w-4" />
+            <span className="font-medium">{formatHebrewDate(currentTime)}</span>
+            <span className="text-muted-foreground/60">|</span>
+            <span>{formatGregorianDate(currentTime)}</span>
+            <span className="text-muted-foreground/60">|</span>
+            <span className="font-mono">{formatTime(currentTime)}</span>
+          </div>
+        )}
+
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -224,5 +275,18 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
         </DropdownMenu>
       </div>
     </header>
+
+    {/* Mobile Date/Time Bar */}
+    {currentTime && (
+      <div className="lg:hidden sticky top-16 z-20 bg-gradient-to-r from-slate-100 to-slate-50 border-b px-4 py-1.5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <Calendar className="h-3 w-3" />
+        <span className="font-medium">{formatHebrewDate(currentTime)}</span>
+        <span className="text-muted-foreground/60">|</span>
+        <span>{formatGregorianDate(currentTime)}</span>
+        <span className="text-muted-foreground/60">|</span>
+        <span className="font-mono">{formatTime(currentTime)}</span>
+      </div>
+    )}
+    </>
   );
 }

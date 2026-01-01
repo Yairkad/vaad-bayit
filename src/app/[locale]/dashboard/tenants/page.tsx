@@ -606,10 +606,10 @@ export default function TenantsPage() {
               const displayPhone = member.profiles?.phone || member.phone;
               const displayEmail = member.profiles?.email || member.email;
               return (
-              <Card key={member.id}>
+              <Card key={member.id} dir="rtl">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-right">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-lg">דירה {member.apartment_number}</span>
                         <Badge variant={member.role === 'committee' ? 'default' : 'secondary'}>
@@ -624,13 +624,13 @@ export default function TenantsPage() {
                       <p className="font-medium">{displayName}</p>
                       <div className="text-sm text-muted-foreground space-y-0.5">
                         {displayPhone && (
-                          <p dir="ltr">{displayPhone}</p>
+                          <p dir="ltr" className="text-right">{displayPhone}</p>
                         )}
                         {(member as any).phone2 && (
-                          <p dir="ltr">{(member as any).phone2}</p>
+                          <p dir="ltr" className="text-right">{(member as any).phone2}</p>
                         )}
                         {displayEmail && (
-                          <p dir="ltr" className="text-xs">{displayEmail}</p>
+                          <p dir="ltr" className="text-xs text-right">{displayEmail}</p>
                         )}
                       </div>
                       <div className="flex gap-2 text-xs text-muted-foreground">
