@@ -676,18 +676,18 @@ export default function TenantsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table dir="rtl">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('tenants.apartment')}</TableHead>
-                    <TableHead>{t('tenants.tenantName')}</TableHead>
-                    <TableHead>בעלות</TableHead>
-                    <TableHead>טלפון 1</TableHead>
-                    <TableHead>טלפון 2</TableHead>
-                    <TableHead>מחסן</TableHead>
-                    <TableHead>חניה</TableHead>
-                    <TableHead>משתמש</TableHead>
-                    <TableHead>{t('common.actions')}</TableHead>
+                    <TableHead className="text-right">{t('tenants.apartment')}</TableHead>
+                    <TableHead className="text-right">{t('tenants.tenantName')}</TableHead>
+                    <TableHead className="text-right">בעלות</TableHead>
+                    <TableHead className="text-right">טלפון 1</TableHead>
+                    <TableHead className="text-right">טלפון 2</TableHead>
+                    <TableHead className="text-right">מחסן</TableHead>
+                    <TableHead className="text-right">חניה</TableHead>
+                    <TableHead className="text-right">משתמש</TableHead>
+                    <TableHead className="text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -777,14 +777,14 @@ export default function TenantsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table dir="rtl">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-20">{t('tenants.apartment')}</TableHead>
-                    <TableHead>שם</TableHead>
-                    <TableHead>טלפון 1</TableHead>
-                    <TableHead>טלפון 2</TableHead>
-                    <TableHead>אימייל</TableHead>
+                    <TableHead className="w-20 text-right">{t('tenants.apartment')}</TableHead>
+                    <TableHead className="text-right">שם</TableHead>
+                    <TableHead className="text-right">טלפון 1</TableHead>
+                    <TableHead className="text-right">טלפון 2</TableHead>
+                    <TableHead className="text-right">אימייל</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
