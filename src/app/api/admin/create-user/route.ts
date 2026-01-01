@@ -2,47 +2,74 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
-// Create admin client with service role key
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
+// Helper function to create admin client
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) {
+    console.error('Missing Supabase environment variables:', { url: !!url, serviceKey: !!serviceKey });
+    throw new Error('Missing Supabase configuration');
+  }
+
+  return createClient(url, serviceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
-);
+  });
+}
 
 export async function POST(request: Request) {
   try {
+    // Verify environment variables
+    let supabaseAdmin;
+    try {
+      supabaseAdmin = getSupabaseAdmin();
+    } catch {
+      return NextResponse.json(
+        { error: 'שגיאת הגדרות שרת - חסרים פרטי התחברות לסופהבייס' },
+        { status: 500 }
+      );
+    }
+
     // Verify the requester is an admin
     const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'שגיאת אימות: ' + authError.message }, { status: 401 });
+    }
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'לא מחובר - נא להתחבר מחדש' }, { status: 401 });
     }
 
     // Check if user is admin
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
 
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      return NextResponse.json({ error: 'שגיאה בשליפת פרופיל: ' + profileError.message }, { status: 500 });
+    }
+
     const profileData = profile as { role: string } | null;
     if (profileData?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
+      return NextResponse.json({ error: 'אין הרשאות מנהל' }, { status: 403 });
     }
 
     // Get request body
     const body = await request.json();
     const { email, full_name, phone, phone2, building_id, apartment_number, role = 'committee' } = body;
 
-    if (!email || !full_name || !building_id || !apartment_number) {
+    if (!email || !full_name || !building_id) {
       return NextResponse.json(
-        { error: 'Missing required fields: email, full_name, building_id, apartment_number' },
+        { error: 'חסרים שדות חובה: אימייל, שם מלא, מזהה בניין' },
         { status: 400 }
       );
     }
@@ -67,45 +94,65 @@ export async function POST(request: Request) {
 
       if (existingMember) {
         return NextResponse.json(
-          { error: 'User is already a member of this building' },
+          { error: 'המשתמש כבר חבר בבניין זה' },
           { status: 400 }
         );
       }
     } else {
-      // Invite new user - they will receive an email to set their password
-      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-        email,
-        {
-          data: {
-            full_name,
-          },
-          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?type=invite`,
-        }
-      );
+      // Create new user with a temporary password (they will reset it)
+      const tempPassword = crypto.randomUUID() + 'Aa1!'; // Strong temp password
 
-      if (inviteError || !inviteData.user) {
-        console.error('Error inviting user:', inviteError);
+      const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: tempPassword,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: {
+          full_name,
+        },
+      });
+
+      if (createError || !createData.user) {
+        console.error('Error creating user:', createError);
         return NextResponse.json(
-          { error: inviteError?.message || 'Failed to invite user' },
+          { error: 'שגיאה ביצירת משתמש: ' + (createError?.message || 'Unknown error') },
           { status: 500 }
         );
       }
 
-      userId = inviteData.user.id;
+      userId = createData.user.id;
 
-      // Create profile for the new user with the appropriate system role
-      const { error: profileError } = await supabaseAdmin
+      // Create profile manually (don't rely on trigger)
+      const { error: profileCreateError } = await supabaseAdmin
         .from('profiles')
-        .insert({
+        .upsert({
           id: userId,
           full_name,
           phone: phone || null,
-          role: role === 'committee' ? 'committee' : 'tenant', // System role based on building role
-        });
+          role: role === 'committee' ? 'committee' : 'tenant',
+        }, { onConflict: 'id' });
 
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-        // Don't fail - profile might be created by trigger
+      if (profileCreateError) {
+        console.error('Error creating profile:', profileCreateError);
+        // Try to delete the user if profile creation failed
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        return NextResponse.json(
+          { error: 'שגיאה ביצירת פרופיל: ' + profileCreateError.message },
+          { status: 500 }
+        );
+      }
+
+      // Send password reset email so user can set their own password
+      const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+        options: {
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?type=recovery`,
+        },
+      });
+
+      if (resetError) {
+        console.error('Error sending reset email:', resetError);
+        // Don't fail - user was created, they can use "forgot password"
       }
     }
 
@@ -125,7 +172,7 @@ export async function POST(request: Request) {
     if (memberError) {
       console.error('Error adding building member:', memberError);
       return NextResponse.json(
-        { error: 'User created but failed to add to building: ' + memberError.message },
+        { error: 'המשתמש נוצר אך לא הצלחנו להוסיף לבניין: ' + memberError.message },
         { status: 500 }
       );
     }
@@ -135,14 +182,14 @@ export async function POST(request: Request) {
       userId,
       isNewUser: !existingUser,
       message: existingUser
-        ? 'Existing user added to building'
-        : 'New user created and added to building. Password reset email sent.',
+        ? 'משתמש קיים נוסף לבניין'
+        : 'משתמש חדש נוצר והוסף לבניין',
     });
 
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'שגיאת שרת פנימית: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     );
   }
