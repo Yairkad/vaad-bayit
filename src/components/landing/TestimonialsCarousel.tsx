@@ -1,54 +1,45 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/client';
+import type { Testimonial } from '@/types/database';
 
-const testimonials = [
+// Fallback testimonials in case database is not available
+const fallbackTestimonials: Testimonial[] = [
   {
-    id: 1,
+    id: '1',
     name: 'יוסי כהן',
     role: 'יו"ר ועד הבית',
     building: 'רחוב הרצל 22, תל אביב',
     content: 'מאז שהתחלנו להשתמש במערכת, הכל הפך להרבה יותר מסודר. הדיירים מקבלים הודעות בזמן אמת והתשלומים מתנהלים בצורה חלקה.',
-    rating: 5,
     avatar: 'י',
+    is_active: true,
+    display_order: 1,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 2,
+    id: '2',
     name: 'מירי לוי',
     role: 'גזברית',
     building: 'שדרות רוטשילד 45, רמת גן',
     content: 'הדוחות האוטומטיים חוסכים לי שעות של עבודה כל חודש. אני יכולה לראות במבט אחד מי שילם ומי לא, ולשלוח תזכורות בלחיצת כפתור.',
-    rating: 5,
     avatar: 'מ',
+    is_active: true,
+    display_order: 2,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 3,
+    id: '3',
     name: 'דני אברהם',
     role: 'דייר',
     building: 'רחוב ביאליק 18, חיפה',
     content: 'סוף סוף יש לי מקום אחד לראות את כל ההודעות של הבניין, לדווח על תקלות ולשלם את ועד הבית. ממש נוח!',
-    rating: 5,
     avatar: 'ד',
-  },
-  {
-    id: 4,
-    name: 'שרה גולדשטיין',
-    role: 'יו"ר ועד הבית',
-    building: 'רחוב ז\'בוטינסקי 33, פתח תקווה',
-    content: 'ניהול 40 דירות היה סיוט עד שמצאנו את המערכת הזו. עכשיו הכל במקום אחד - דיירים, תשלומים, הודעות ומסמכים.',
-    rating: 5,
-    avatar: 'ש',
-  },
-  {
-    id: 5,
-    name: 'אבי רוזנברג',
-    role: 'חבר ועד',
-    building: 'רחוב אלנבי 67, תל אביב',
-    content: 'האפשרות לערוך סקרים ולקבל תשובות מהדיירים ישירות במערכת זה בדיוק מה שחיפשנו. הרבה יותר קל לקבל החלטות ככה.',
-    rating: 5,
-    avatar: 'א',
+    is_active: true,
+    display_order: 3,
+    created_at: new Date().toISOString(),
   },
 ];
 
@@ -57,7 +48,7 @@ function TestimonialCard({
   isActive,
   direction,
 }: {
-  testimonial: typeof testimonials[0];
+  testimonial: Testimonial;
   isActive: boolean;
   direction: 'enter' | 'exit-left' | 'exit-right' | 'none';
 }) {
@@ -115,20 +106,50 @@ function TestimonialCard({
 }
 
 export function TestimonialsCarousel() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(fallbackTestimonials);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Fetch testimonials from database
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('testimonials')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching testimonials:', error);
+          // Keep using fallback testimonials
+        } else if (data && data.length > 0) {
+          setTestimonials(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch testimonials:', err);
+        // Keep using fallback testimonials
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
+
   // Auto-rotate testimonials
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    if (!isAutoPlaying || isLoading) return;
 
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAutoPlaying]);
+  }, [isAutoPlaying, isLoading, testimonials.length]);
 
   const goToPrev = () => {
     setIsAutoPlaying(false);
@@ -151,6 +172,11 @@ export function TestimonialsCarousel() {
       { testimonial: testimonials[nextIndex], isActive: false, key: `next-${nextIndex}`, direction: 'none' as const },
     ];
   };
+
+  // Don't render if no testimonials
+  if (testimonials.length === 0) {
+    return null;
+  }
 
   const visibleCards = getVisibleCards();
 

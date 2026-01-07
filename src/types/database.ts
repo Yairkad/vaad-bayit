@@ -512,6 +512,41 @@ export interface Database {
           created_at?: string
         }
       }
+      testimonials: {
+        Row: {
+          id: string
+          name: string
+          role: string
+          building: string
+          content: string
+          avatar: string
+          is_active: boolean
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          role: string
+          building: string
+          content: string
+          avatar: string
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          role?: string
+          building?: string
+          content?: string
+          avatar?: string
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -542,3 +577,4 @@ export type Document = Tables<'documents'>;
 export type BuildingInvite = Tables<'building_invites'>;
 export type MessageResponse = Tables<'message_responses'>;
 export type ExtraCharge = Tables<'extra_charges'>;
+export type Testimonial = Tables<'testimonials'>;

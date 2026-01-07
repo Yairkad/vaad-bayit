@@ -18,6 +18,7 @@ import {
   Inbox,
   Loader2,
   Wallet,
+  Quote,
 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { BugReportDialog } from '@/components/BugReportDialog';
@@ -51,6 +52,7 @@ export function Sidebar({ userRole }: SidebarProps) {
     { href: '/admin/buildings', icon: Building2, label: t('buildings'), borderColor: 'border-r-blue-500', activeColor: 'text-blue-600', activeBg: 'bg-blue-50' },
     { href: '/admin/users', icon: Users, label: 'משתמשים', borderColor: 'border-r-purple-500', activeColor: 'text-purple-600', activeBg: 'bg-purple-50' },
     { href: '/admin/requests', icon: Inbox, label: 'פניות חדשות', borderColor: 'border-r-amber-500', activeColor: 'text-amber-600', activeBg: 'bg-amber-50' },
+    { href: '/admin/testimonials', icon: Quote, label: 'המלצות', borderColor: 'border-r-yellow-500', activeColor: 'text-yellow-600', activeBg: 'bg-yellow-50' },
   ];
 
   const committeeLinks = [
