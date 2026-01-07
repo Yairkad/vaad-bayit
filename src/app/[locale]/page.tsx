@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, CreditCard, FileText, Loader2 } from 'lucide-react';
+import { Users, CreditCard, FileText, Loader2, MessageSquare } from 'lucide-react';
 import { ContactDialog } from '@/components/ContactDialog';
 import { ScreenshotsGallery } from '@/components/landing/ScreenshotsGallery';
 import { TestimonialsCarousel } from '@/components/landing/TestimonialsCarousel';
@@ -29,50 +28,53 @@ export default function HomePage() {
 
   const features = [
     {
-      icon: Building2,
-      title: 'ניהול בניינים',
-      description: 'ניהול קל ופשוט של מספר בניינים במקום אחד'
-    },
-    {
       icon: Users,
       title: 'ניהול דיירים',
-      description: 'מעקב אחר כל הדיירים, פרטי קשר ותשלומים'
+      description: 'מעקב אחר כל הדיירים, פרטי קשר, דירות וקומות',
+      color: 'from-[#bee4fa] to-[#0ea5e9]',
+      borderColor: 'border-[#0ea5e9]',
     },
     {
       icon: CreditCard,
       title: 'מעקב תשלומים',
-      description: 'מעקב אחר תשלומי ועד, הוראות קבע ומזומן'
+      description: 'מעקב אחר תשלומי ועד בית והתראות על פיגורים',
+      color: 'from-[#bbf7d0] to-[#2da05f]',
+      borderColor: 'border-[#2da05f]',
     },
     {
-      icon: FileText,
-      title: 'מסמכים ודוחות',
-      description: 'ניהול מסמכים, תקנון, ביטוח והפקת דוחות'
-    }
+      icon: MessageSquare,
+      title: 'הודעות ומסמכים',
+      description: 'לוח מודעות, סקרים וניהול מסמכים',
+      color: 'from-[#fef3c7] to-[#f59e0b]',
+      borderColor: 'border-[#f59e0b]',
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-[#f0f9ff]">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 bg-[#bee4fa] border-b border-[#a5d4f0] shadow-sm">
-        <div className="container mx-auto px-4 py-3">
+    <div className="min-h-screen">
+      {/* Sticky Header - Compact for mobile */}
+      <header className="sticky top-0 z-50 bg-[#bee4fa]/95 backdrop-blur border-b border-[#a5d4f0] shadow-sm">
+        <div className="container mx-auto px-3 py-2 sm:px-4 sm:py-3">
           <nav className="flex justify-between items-center">
-            <Link href="/" className="flex items-center gap-2">
-              <img src="/icon.svg" alt="ועד בית" className="h-10 w-10" />
-              <span className="text-xl font-bold text-[#203857]">
+            <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
+              <img src="/icon.svg" alt="ועד בית" className="h-8 w-8 sm:h-10 sm:w-10" />
+              <span className="text-lg sm:text-xl font-bold text-[#203857]">
                 {t('common.appName')}
               </span>
             </Link>
-            <div className="flex gap-2 sm:gap-4">
+            <div className="flex gap-1.5 sm:gap-3">
               <Button
                 variant="ghost"
-                className="text-[#203857] hover:bg-[#a5d4f0]"
+                size="sm"
+                className="text-[#203857] hover:bg-[#a5d4f0] text-xs sm:text-sm px-2.5 sm:px-4"
                 onClick={handleLoginClick}
                 disabled={isLoginLoading || isRegisterLoading}
               >
                 {isLoginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('auth.login')}
               </Button>
               <Button
-                className="bg-[#203857] hover:bg-[#2d4a6f]"
+                size="sm"
+                className="bg-[#203857] hover:bg-[#2d4a6f] text-xs sm:text-sm px-2.5 sm:px-4"
                 onClick={handleRegisterClick}
                 disabled={isLoginLoading || isRegisterLoading}
               >
@@ -83,9 +85,14 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section>
-        <div className="container mx-auto px-4 py-20 text-center">
+      {/* Hero Section with background image */}
+      <section
+        className="relative bg-cover bg-center"
+        style={{
+          backgroundImage: `linear-gradient(135deg, rgba(240, 249, 255, 0.95) 0%, rgba(190, 228, 250, 0.9) 100%), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80')`,
+        }}
+      >
+        <div className="container mx-auto px-4 py-16 sm:py-20 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             מערכת ניהול ועד בית
           </h2>
@@ -105,7 +112,7 @@ export default function HomePage() {
             <Button
               size="lg"
               variant="outline"
-              className="text-lg px-8 border-[#203857] text-[#203857] hover:bg-[#bee4fa]"
+              className="text-lg px-8 border-[#203857] text-[#203857] hover:bg-white/50 bg-white/30"
               onClick={handleLoginClick}
               disabled={isLoginLoading || isRegisterLoading}
             >
@@ -115,25 +122,24 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-white/50">
+      {/* Features Section - 3 compact cards */}
+      <section className="py-12 sm:py-16 bg-white/80">
         <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center mb-12">
+          <h3 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-10">
             מה המערכת מציעה?
           </h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center">
-                <CardHeader>
-                  <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>{feature.description}</CardDescription>
-                </CardContent>
-              </Card>
+              <div
+                key={index}
+                className={`bg-white rounded-xl shadow-lg p-4 sm:p-5 text-center border-t-4 ${feature.borderColor} hover:shadow-xl transition-shadow`}
+              >
+                <div className={`mx-auto w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-3 shadow-md`}>
+                  <feature.icon className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="font-bold text-base mb-2 text-[#203857]">{feature.title}</h4>
+                <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+              </div>
             ))}
           </div>
         </div>
