@@ -31,11 +31,20 @@ export const metadata: Metadata = {
     type: "website",
     locale: "he_IL",
     siteName: "ועד בית",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ועד בית - מערכת ניהול ועד בית חינמית",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "ועד בית - מערכת ניהול",
     description: "מערכת חינמית לניהול ועד בית",
+    images: ["/og-image.png"],
   },
 };
 
