@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Quote, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const testimonials = [
@@ -56,71 +55,66 @@ const testimonials = [
 function TestimonialCard({
   testimonial,
   isActive,
-  position
 }: {
   testimonial: typeof testimonials[0];
   isActive: boolean;
-  position: 'prev' | 'active' | 'next' | 'hidden';
 }) {
-  const positionStyles = {
-    prev: 'translate-x-[85%] scale-[0.85] opacity-40 pointer-events-none',
-    active: 'translate-x-0 scale-100 opacity-100',
-    next: '-translate-x-[85%] scale-[0.85] opacity-40 pointer-events-none',
-    hidden: 'translate-x-[200%] scale-75 opacity-0 pointer-events-none',
-  };
-
   return (
-    <Card
+    <div
       className={`
-        absolute top-0 left-0 right-0 bg-white/10 backdrop-blur border-white/20
-        transition-all duration-500 ease-out
-        ${positionStyles[position]}
+        flex-shrink-0 transition-all duration-500 ease-out
+        ${isActive
+          ? 'w-[280px] sm:w-[320px] scale-100 opacity-100 z-10'
+          : 'w-[240px] sm:w-[280px] scale-[0.85] opacity-40'
+        }
       `}
     >
-      <CardContent className="p-5 md:p-6">
-        <div className="flex flex-col items-center text-center">
-          {/* Quote icon */}
-          <div className="mb-3">
-            <Quote className="h-6 w-6 md:h-8 md:w-8 text-[#bee4fa] opacity-50" />
+      <div
+        className={`
+          backdrop-blur rounded-xl border shadow-xl h-full
+          ${isActive
+            ? 'bg-white/15 border-white/30 p-5 sm:p-6'
+            : 'bg-white/10 border-white/20 p-4 sm:p-5'
+          }
+        `}
+      >
+        {/* Testimonial text */}
+        <p className={`text-white leading-relaxed mb-4 ${isActive ? 'text-sm sm:text-base text-center' : 'text-xs sm:text-sm line-clamp-3'}`}>
+          &ldquo;{testimonial.content}&rdquo;
+        </p>
+
+        {/* Author info */}
+        <div className={`${isActive ? 'flex flex-col items-center' : 'flex items-center gap-3'}`}>
+          <div
+            className={`
+              rounded-full bg-gradient-to-br from-[#bee4fa] to-[#0ea5e9]
+              flex items-center justify-center text-white font-bold
+              ${isActive ? 'w-12 h-12 sm:w-14 sm:h-14 text-lg sm:text-xl mb-2' : 'w-9 h-9 sm:w-10 sm:h-10 text-sm sm:text-base'}
+            `}
+          >
+            {testimonial.avatar}
           </div>
-
-          {/* Rating stars */}
-          <div className="flex gap-0.5 mb-3">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`h-4 w-4 ${
-                  i < testimonial.rating
-                    ? 'text-yellow-400 fill-yellow-400'
-                    : 'text-white/30'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Testimonial text */}
-          <p className="text-sm md:text-base text-white leading-relaxed mb-4 max-w-lg line-clamp-4">
-            &ldquo;{testimonial.content}&rdquo;
-          </p>
-
-          {/* Author info */}
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-[#bee4fa] to-[#0ea5e9] flex items-center justify-center text-lg md:text-xl font-bold text-white mb-2">
-              {testimonial.avatar}
-            </div>
-            <p className="font-bold text-white text-sm md:text-base">{testimonial.name}</p>
-            <p className="text-[#bee4fa] text-xs md:text-sm">{testimonial.role}</p>
-            <p className="text-white/50 text-xs mt-0.5">{testimonial.building}</p>
+          <div className={isActive ? 'text-center' : ''}>
+            <p className={`text-white font-bold ${isActive ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'}`}>
+              {testimonial.name}
+            </p>
+            <p className={`${isActive ? 'text-[#bee4fa] text-xs sm:text-sm' : 'text-white/60 text-[10px] sm:text-xs'}`}>
+              {testimonial.role}
+            </p>
+            {isActive && (
+              <p className="text-white/50 text-[10px] sm:text-xs mt-0.5">{testimonial.building}</p>
+            )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 export function TestimonialsCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-rotate testimonials
   useEffect(() => {
@@ -143,53 +137,59 @@ export function TestimonialsCarousel() {
     setActiveIndex((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
   };
 
-  const getPosition = (index: number): 'prev' | 'active' | 'next' | 'hidden' => {
+  // Get visible cards (prev, active, next) for infinite loop effect
+  const getVisibleCards = () => {
     const prevIndex = activeIndex === 0 ? testimonials.length - 1 : activeIndex - 1;
     const nextIndex = activeIndex === testimonials.length - 1 ? 0 : activeIndex + 1;
 
-    if (index === activeIndex) return 'active';
-    if (index === prevIndex) return 'prev';
-    if (index === nextIndex) return 'next';
-    return 'hidden';
+    return [
+      { testimonial: testimonials[prevIndex], isActive: false, key: `prev-${prevIndex}` },
+      { testimonial: testimonials[activeIndex], isActive: true, key: `active-${activeIndex}` },
+      { testimonial: testimonials[nextIndex], isActive: false, key: `next-${nextIndex}` },
+    ];
   };
+
+  const visibleCards = getVisibleCards();
 
   return (
     <section className="py-10 md:py-14 bg-[#203857] overflow-hidden">
       <div className="container mx-auto px-4">
-        <h3 className="text-2xl md:text-3xl font-bold text-center mb-3 text-white">
+        <h3 className="text-2xl md:text-3xl font-bold text-center mb-2 text-white">
           מה אומרים עלינו?
         </h3>
         <p className="text-center text-white/70 mb-8 max-w-xl mx-auto text-sm md:text-base">
           הצטרפו לעשרות ועדי בתים שכבר מנהלים את הבניין שלהם בצורה חכמה יותר
         </p>
 
-        <div className="max-w-xl mx-auto relative">
-          {/* Navigation arrows */}
+        <div className="relative max-w-5xl mx-auto">
+          {/* Navigation arrows - Desktop */}
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-14 z-20 rounded-full text-white hover:bg-white/20 hidden sm:flex"
-            onClick={goToPrev}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 rounded-full text-white hover:bg-white/20 hidden md:flex"
+            onClick={goToNext}
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-14 z-20 rounded-full text-white hover:bg-white/20 hidden sm:flex"
-            onClick={goToNext}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 rounded-full text-white hover:bg-white/20 hidden md:flex"
+            onClick={goToPrev}
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
 
-          {/* Testimonials container with peek effect */}
-          <div className="relative h-[280px] md:h-[300px]">
-            {testimonials.map((testimonial, index) => (
+          {/* Cards container */}
+          <div
+            ref={containerRef}
+            className="flex items-center justify-center gap-3 sm:gap-4 py-4 px-4"
+          >
+            {visibleCards.map((card) => (
               <TestimonialCard
-                key={testimonial.id}
-                testimonial={testimonial}
-                isActive={index === activeIndex}
-                position={getPosition(index)}
+                key={card.key}
+                testimonial={card.testimonial}
+                isActive={card.isActive}
               />
             ))}
           </div>
@@ -203,34 +203,17 @@ export function TestimonialsCarousel() {
                   setIsAutoPlaying(false);
                   setActiveIndex(index);
                 }}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === activeIndex ? 'bg-white w-6' : 'bg-white/30 hover:bg-white/50'
+                className={`h-2 rounded-full transition-all ${
+                  index === activeIndex ? 'bg-white w-6' : 'bg-white/30 hover:bg-white/50 w-2'
                 }`}
               />
             ))}
           </div>
 
-          {/* Mobile navigation */}
-          <div className="flex justify-center gap-4 mt-4 sm:hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/70 hover:text-white hover:bg-white/10"
-              onClick={goToPrev}
-            >
-              <ChevronRight className="h-4 w-4 ml-1" />
-              הקודם
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/70 hover:text-white hover:bg-white/10"
-              onClick={goToNext}
-            >
-              הבא
-              <ChevronLeft className="h-4 w-4 mr-1" />
-            </Button>
-          </div>
+          {/* Mobile swipe hint */}
+          <p className="text-center text-white/40 text-xs mt-3 md:hidden">
+            לחצו על הנקודות להחלפה
+          </p>
         </div>
       </div>
     </section>
