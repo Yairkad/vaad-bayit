@@ -55,18 +55,21 @@ const testimonials = [
 function TestimonialCard({
   testimonial,
   isActive,
+  direction,
 }: {
   testimonial: typeof testimonials[0];
   isActive: boolean;
+  direction: 'enter' | 'exit-left' | 'exit-right' | 'none';
 }) {
   return (
     <div
       className={`
-        flex-shrink-0 transition-all duration-500 ease-out
+        flex-shrink-0 transition-all duration-500 ease-out transform
         ${isActive
           ? 'w-[280px] sm:w-[320px] scale-100 opacity-100 z-10'
           : 'w-[240px] sm:w-[280px] scale-[0.85] opacity-40'
         }
+        ${direction === 'enter' ? 'animate-fade-in-scale' : ''}
       `}
     >
       <div
@@ -143,20 +146,20 @@ export function TestimonialsCarousel() {
     const nextIndex = activeIndex === testimonials.length - 1 ? 0 : activeIndex + 1;
 
     return [
-      { testimonial: testimonials[prevIndex], isActive: false, key: `prev-${prevIndex}` },
-      { testimonial: testimonials[activeIndex], isActive: true, key: `active-${activeIndex}` },
-      { testimonial: testimonials[nextIndex], isActive: false, key: `next-${nextIndex}` },
+      { testimonial: testimonials[prevIndex], isActive: false, key: `prev-${prevIndex}`, direction: 'none' as const },
+      { testimonial: testimonials[activeIndex], isActive: true, key: `active-${activeIndex}`, direction: 'enter' as const },
+      { testimonial: testimonials[nextIndex], isActive: false, key: `next-${nextIndex}`, direction: 'none' as const },
     ];
   };
 
   const visibleCards = getVisibleCards();
 
   return (
-    <section className="py-10 md:py-14 bg-[#203857] overflow-hidden">
+    <section className="py-10 md:py-14 bg-[#203857] overflow-hidden" aria-label="המלצות לקוחות">
       <div className="container mx-auto px-4">
-        <h3 className="text-2xl md:text-3xl font-bold text-center mb-2 text-white">
+        <h2 className="text-2xl md:text-3xl font-bold text-center mb-2 text-white">
           מה אומרים עלינו?
-        </h3>
+        </h2>
         <p className="text-center text-white/70 mb-8 max-w-xl mx-auto text-sm md:text-base">
           הצטרפו לעשרות ועדי בתים שכבר מנהלים את הבניין שלהם בצורה חכמה יותר
         </p>
@@ -168,6 +171,7 @@ export function TestimonialsCarousel() {
             size="icon"
             className="absolute left-0 top-1/2 -translate-y-1/2 z-20 rounded-full text-white hover:bg-white/20 hidden md:flex"
             onClick={goToNext}
+            aria-label="המלצה הבאה"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -176,6 +180,7 @@ export function TestimonialsCarousel() {
             size="icon"
             className="absolute right-0 top-1/2 -translate-y-1/2 z-20 rounded-full text-white hover:bg-white/20 hidden md:flex"
             onClick={goToPrev}
+            aria-label="המלצה קודמת"
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
@@ -190,13 +195,14 @@ export function TestimonialsCarousel() {
                 key={card.key}
                 testimonial={card.testimonial}
                 isActive={card.isActive}
+                direction={card.direction}
               />
             ))}
           </div>
 
           {/* Dots indicator */}
-          <div className="flex justify-center gap-2 mt-4">
-            {testimonials.map((_, index) => (
+          <div className="flex justify-center gap-2 mt-4" role="tablist" aria-label="בחירת המלצה">
+            {testimonials.map((testimonial, index) => (
               <button
                 key={index}
                 onClick={() => {
@@ -206,6 +212,9 @@ export function TestimonialsCarousel() {
                 className={`h-2 rounded-full transition-all ${
                   index === activeIndex ? 'bg-white w-6' : 'bg-white/30 hover:bg-white/50 w-2'
                 }`}
+                role="tab"
+                aria-selected={index === activeIndex}
+                aria-label={`המלצה ${index + 1} מתוך ${testimonials.length} - ${testimonial.name}`}
               />
             ))}
           </div>

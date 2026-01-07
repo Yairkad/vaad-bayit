@@ -51,7 +51,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" id="main-content">
       {/* Sticky Header - Compact for mobile */}
       <header className="sticky top-0 z-50 bg-[#bee4fa]/95 backdrop-blur border-b border-[#a5d4f0] shadow-sm">
         <div className="container mx-auto px-3 py-2 sm:px-4 sm:py-3">
@@ -93,10 +93,10 @@ export default function HomePage() {
         }}
       >
         <div className="container mx-auto px-4 py-16 sm:py-20 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
             בית+
-          </h2>
-          <p className="text-2xl md:text-3xl font-medium text-[#203857]/80 mb-6">
+          </h1>
+          <p className="text-2xl md:text-3xl font-medium text-[#203857]/80 mb-6" role="doc-subtitle">
             פשוט. מותאם. יעיל.
           </p>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -128,9 +128,9 @@ export default function HomePage() {
       {/* Features Section - 3 compact cards */}
       <section className="py-12 sm:py-16 bg-white/80">
         <div className="container mx-auto px-4">
-          <h3 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-10">
             מה המערכת מציעה?
-          </h3>
+          </h2>
           <div className="grid md:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {features.map((feature, index) => (
               <div
@@ -140,7 +140,7 @@ export default function HomePage() {
                 <div className={`mx-auto w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-3 shadow-md`}>
                   <feature.icon className="w-6 h-6 text-white" />
                 </div>
-                <h4 className="font-bold text-base mb-2 text-[#203857]">{feature.title}</h4>
+                <h3 className="font-bold text-base mb-2 text-[#203857]">{feature.title}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
               </div>
             ))}
@@ -157,9 +157,9 @@ export default function HomePage() {
       {/* Contact Section */}
       <section id="contact" className="py-20">
         <div className="container mx-auto px-4 text-center">
-          <h3 className="text-3xl font-bold mb-4">
+          <h2 className="text-3xl font-bold mb-4">
             רוצים להצטרף למערכת?
-          </h3>
+          </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
             השאירו פרטים ונחזור אליכם עם מידע על הוספת הבניין שלכם למערכת
           </p>

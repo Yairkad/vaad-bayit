@@ -11,7 +11,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Building2, Loader2, CheckCircle } from 'lucide-react';
+import { Building2, Loader2, CheckCircle, ArrowRight } from 'lucide-react';
 
 function LoginForm() {
   const t = useTranslations();
@@ -230,7 +230,15 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 relative">
+      {/* Back to home button */}
+      <Link
+        href="/"
+        className="absolute top-4 right-4 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowRight className="h-4 w-4" />
+        <span>חזרה לדף הבית</span>
+      </Link>
       <Suspense fallback={<LoginFormFallback />}>
         <LoginForm />
       </Suspense>
