@@ -57,7 +57,7 @@ export default function HomePage() {
         <div className="container mx-auto px-3 py-2 sm:px-4 sm:py-3">
           <nav className="flex justify-between items-center">
             <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
-              <img src="/icon.svg" alt="ועד בית" className="h-8 w-8 sm:h-10 sm:w-10" />
+              <img src="/icon.svg" alt="בית+" className="h-8 w-8 sm:h-10 sm:w-10" />
               <span className="text-lg sm:text-xl font-bold text-[#203857]">
                 {t('common.appName')}
               </span>
@@ -93,11 +93,14 @@ export default function HomePage() {
         }}
       >
         <div className="container mx-auto px-4 py-16 sm:py-20 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            מערכת ניהול ועד בית
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            בית+
           </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            פתרון פשוט וחינמי לניהול ועד הבית שלכם.
+          <p className="text-2xl md:text-3xl font-medium text-[#203857]/80 mb-6">
+            פשוט. מותאם. יעיל.
+          </p>
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            מערכת ניהול ועד בית מותאמת לצרכים שלכם.
             מעקב תשלומים, ניהול דיירים, הודעות ומסמכים - הכל במקום אחד.
           </p>
           <div className="flex gap-4 justify-center">
@@ -188,7 +191,7 @@ export default function HomePage() {
               צור קשר
             </button>
           </div>
-          <p className="text-sm">© {new Date().getFullYear()} כל הזכויות שמורות למערכת ועד בית.</p>
+          <p className="text-sm">© {new Date().getFullYear()} כל הזכויות שמורות למערכת בית+</p>
         </div>
       </footer>
     </div>

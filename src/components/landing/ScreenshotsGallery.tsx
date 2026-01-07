@@ -421,7 +421,7 @@ export function ScreenshotsGallery() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Building2 className="h-4 w-4" />
-                            <span className="font-bold text-xs">ועד בית</span>
+                            <span className="font-bold text-xs">בית+</span>
                           </div>
                           <div className="text-[10px] opacity-90">בית הרצל 15</div>
                         </div>
@@ -470,7 +470,7 @@ export function ScreenshotsGallery() {
                               <div className="h-4 w-4 sm:h-6 sm:w-6 rounded-lg bg-[#bee4fa] flex items-center justify-center">
                                 <Building2 className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 text-[#203857]" />
                               </div>
-                              <span className="font-bold text-[8px] sm:text-[10px]">ועד בית</span>
+                              <span className="font-bold text-[8px] sm:text-[10px]">בית+</span>
                             </div>
                             <div className="space-y-0.5 text-[8px] sm:text-[10px]">
                               {sidebarItems.map((item, idx) => (

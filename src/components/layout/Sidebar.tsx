@@ -87,7 +87,7 @@ export function Sidebar({ userRole }: SidebarProps) {
             alt="לוגו"
             className="h-9 w-9 rounded-lg object-cover"
           />
-          <span className="text-xl font-bold text-gray-800 truncate max-w-[160px]">{buildingName || 'ועד בית'}</span>
+          <span className="text-xl font-bold text-gray-800 truncate max-w-[160px]">{buildingName || 'בית+'}</span>
         </Link>
       </div>
 

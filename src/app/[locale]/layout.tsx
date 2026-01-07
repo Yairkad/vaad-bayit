@@ -9,8 +9,8 @@ import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "ועד בית - מערכת ניהול",
-  description: "מערכת חינמית לניהול ועד בית - מעקב תשלומים, ניהול דיירים, הודעות ומסמכים. הכל במקום אחד!",
+  title: "בית+ | פשוט. מותאם. יעיל.",
+  description: "בית+ - מערכת ניהול ועד בית מותאמת לצרכים שלכם. מעקב תשלומים, ניהול דיירים, הודעות ומסמכים - הכל במקום אחד!",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -23,27 +23,27 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ועד בית",
+    title: "בית+",
   },
   openGraph: {
-    title: "ועד בית - מערכת ניהול",
-    description: "מערכת חינמית לניהול ועד בית - מעקב תשלומים, ניהול דיירים, הודעות ומסמכים",
+    title: "בית+ | פשוט. מותאם. יעיל.",
+    description: "בית+ - מערכת ניהול ועד בית מותאמת לצרכים שלכם. מעקב תשלומים, ניהול דיירים, הודעות ומסמכים",
     type: "website",
     locale: "he_IL",
-    siteName: "ועד בית",
+    siteName: "בית+",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "ועד בית - מערכת ניהול ועד בית חינמית",
+        alt: "בית+ - פשוט. מותאם. יעיל.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ועד בית - מערכת ניהול",
-    description: "מערכת חינמית לניהול ועד בית",
+    title: "בית+ | פשוט. מותאם. יעיל.",
+    description: "בית+ - מערכת ניהול ועד בית מותאמת לצרכים שלכם",
     images: ["/og-image.png"],
   },
 };

@@ -193,7 +193,7 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
                   alt="לוגו"
                   className="h-9 w-9 rounded-lg object-cover"
                 />
-                <span className="text-xl font-bold text-gray-800 truncate max-w-[160px]">{buildingName || 'ועד בית'}</span>
+                <span className="text-xl font-bold text-gray-800 truncate max-w-[160px]">{buildingName || 'בית+'}</span>
               </Link>
             </div>
 
@@ -253,8 +253,8 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
           href={userRole === 'admin' ? '/admin' : userRole === 'tenant' ? '/tenant' : '/dashboard'}
           className="md:hidden flex items-center gap-2"
         >
-          <img src="/icon.svg" alt="ועד בית" className="h-6 w-6" />
-          <span className="font-semibold">ועד בית</span>
+          <img src="/icon.svg" alt="בית+" className="h-6 w-6" />
+          <span className="font-semibold">בית+</span>
         </Link>
 
         {/* Building Switcher - desktop only, for committee members with multiple buildings */}
