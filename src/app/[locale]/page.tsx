@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users, CreditCard, FileText, Loader2 } from 'lucide-react';
 import { ContactDialog } from '@/components/ContactDialog';
+import { ScreenshotsGallery } from '@/components/landing/ScreenshotsGallery';
+import { TestimonialsCarousel } from '@/components/landing/TestimonialsCarousel';
 
 export default function HomePage() {
   const t = useTranslations();
@@ -136,6 +138,12 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Screenshots Gallery Section */}
+      <ScreenshotsGallery />
+
+      {/* Testimonials Carousel Section */}
+      <TestimonialsCarousel />
 
       {/* Contact Section */}
       <section id="contact" className="py-20">
