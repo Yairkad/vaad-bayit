@@ -151,7 +151,7 @@ export function Sidebar({ userRole }: SidebarProps) {
       {/* Footer */}
       <div className="p-3 border-t mt-auto bg-muted/30">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>גירסה 1.0.0</span>
+          <span>גירסה 1.0.1</span>
           <BugReportDialog
             trigger={
               <button className="text-primary hover:underline">

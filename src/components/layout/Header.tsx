@@ -34,6 +34,7 @@ import {
   Wallet,
   CircleDollarSign,
   Calendar,
+  Quote,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -140,6 +141,7 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
     { href: '/admin/buildings', icon: Building2, label: tNav('buildings'), borderColor: 'border-r-blue-500', activeColor: 'text-blue-600' },
     { href: '/admin/users', icon: Users, label: 'משתמשים', borderColor: 'border-r-purple-500', activeColor: 'text-purple-600' },
     { href: '/admin/requests', icon: Inbox, label: 'פניות חדשות', borderColor: 'border-r-amber-500', activeColor: 'text-amber-600' },
+    { href: '/admin/testimonials', icon: Quote, label: 'המלצות', borderColor: 'border-r-yellow-500', activeColor: 'text-yellow-600' },
   ];
 
   const committeeLinks = [
@@ -235,7 +237,7 @@ export function Header({ userName, userRole = 'committee' }: HeaderProps) {
             {/* Footer */}
             <div className="p-3 border-t border-[#d1d5db] mt-auto bg-[#dde1e4]">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>גירסה 1.0.0</span>
+                <span>גירסה 1.0.1</span>
                 <BugReportDialog
                   trigger={
                     <button className="text-blue-600 hover:underline">
